@@ -1,33 +1,74 @@
+/* ================================================================
+   Masters Pool — Global Styles
+   Augusta-inspired palette: deep green, gold, cream, clean whites
+   ================================================================ */
+
 :root {
   --color-green: #006747;
+  --color-green-dark: #004d35;
   --color-green-light: #e8f5e9;
   --color-gold: #c8a951;
+  --color-gold-light: #f5ecd4;
   --color-white: #ffffff;
-  --color-bg: #f5f5f0;
+  --color-bg: #f7f7f2;
   --color-text: #1a1a1a;
-  --color-text-muted: #666;
-  --color-border: #ddd;
-  --color-error: #d32f2f;
+  --color-text-secondary: #555;
+  --color-text-muted: #888;
+  --color-border: #e0ddd5;
+  --color-border-light: #eceae4;
+  --color-error: #c62828;
   --color-error-bg: #fdecea;
   --color-success: #2e7d32;
-  --color-cut: #999;
-  --max-width: 1200px;
-  --header-height: 56px;
+  --color-pending: #e65100;
+  --color-cut: #aaa;
+  --max-width: 1100px;
+  --header-height: 60px;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --transition: 0.2s ease;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 16px;
 }
 
-.app-layout { min-height: 100vh; display: flex; flex-direction: column; }
+/* ================================================================
+   Layout Shell
+   ================================================================ */
+
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================================================================
+   Header
+   ================================================================ */
 
 .header {
-  background: var(--color-green);
+  background: linear-gradient(135deg, var(--color-green) 0%, var(--color-green-dark) 100%);
   color: var(--color-white);
   height: var(--header-height);
   display: flex;
@@ -35,13 +76,14 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .header-inner {
   max-width: var(--max-width);
   width: 100%;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -50,170 +92,877 @@ body {
 .header-title {
   color: var(--color-gold);
   text-decoration: none;
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-weight: 800;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.header-nav { display: flex; gap: 16px; }
-.header-nav a { color: var(--color-white); text-decoration: none; font-size: 0.9rem; opacity: 0.9; }
-.header-nav a:hover { opacity: 1; text-decoration: underline; }
+.header-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.header-nav a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.header-nav a:hover {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ================================================================
+   Main Content
+   ================================================================ */
 
 .main-content {
   flex: 1;
   max-width: var(--max-width);
   width: 100%;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 32px 20px 48px;
 }
+
+/* ================================================================
+   Footer
+   ================================================================ */
 
 .footer {
-  background: var(--color-green);
-  color: var(--color-white);
+  background: var(--color-green-dark);
+  color: rgba(255, 255, 255, 0.7);
   text-align: center;
-  padding: 16px;
-  font-size: 0.85rem;
-  opacity: 0.9;
+  padding: 20px;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
 }
 
-.page h1 { margin-bottom: 16px; color: var(--color-green); }
-.page h2 { margin-bottom: 12px; }
+/* ================================================================
+   Page Headings
+   ================================================================ */
+
+.page h1 {
+  margin-bottom: 8px;
+  color: var(--color-green);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.page h2 {
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.page h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-green);
+  margin-bottom: 8px;
+}
+
+.entry-subtitle {
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+/* ================================================================
+   Buttons
+   ================================================================ */
 
 .btn {
-  display: inline-block;
-  padding: 10px 20px;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: var(--radius);
   text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: opacity 0.2s;
-}
-.btn:hover { opacity: 0.9; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--color-green); color: var(--color-white); }
-.btn-secondary { background: var(--color-white); color: var(--color-green); border: 1px solid var(--color-green); }
-
-.home-actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
-.tournament-info p { margin-bottom: 4px; }
-
-.rules-list { padding-left: 24px; margin-bottom: 24px; }
-.rules-list li { margin-bottom: 8px; }
-.rules-details ul { padding-left: 24px; }
-.rules-details li { margin-bottom: 4px; }
-
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; font-weight: 600; margin-bottom: 4px; }
-.form-group input[type='email'],
-.form-group input[type='text'] {
-  width: 100%; max-width: 400px; padding: 8px 12px;
-  border: 1px solid var(--color-border); border-radius: 4px; font-size: 1rem;
+  transition: all var(--transition);
+  letter-spacing: 0.01em;
+  min-height: 44px; /* touch target */
 }
 
-.picker-instruction { font-weight: 600; margin-bottom: 12px; color: var(--color-green); }
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
 
-.golfer-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px;
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-green) 0%, var(--color-green-dark) 100%);
+  color: var(--color-white);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #007a54 0%, var(--color-green) 100%);
+}
+
+.btn-secondary {
+  background: var(--color-white);
+  color: var(--color-green);
+  border: 1.5px solid var(--color-green);
+}
+
+.btn-secondary:hover {
+  background: var(--color-green-light);
+}
+
+/* ================================================================
+   Home Page
+   ================================================================ */
+
+.home-page h1 {
+  font-size: 2rem;
+}
+
+.tournament-info {
+  background: var(--color-white);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+}
+
+.tournament-info h2 {
+  color: var(--color-green);
+  font-size: 1.3rem;
   margin-bottom: 16px;
 }
 
-.golfer-option {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px; border: 2px solid var(--color-border); border-radius: 4px;
-  background: var(--color-white); cursor: pointer; text-align: left; font-size: 0.9rem;
-  transition: border-color 0.2s;
+.tournament-info p {
+  margin-bottom: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
 }
-.golfer-option:hover:not(:disabled) { border-color: var(--color-green); }
-.golfer-option.selected { border-color: var(--color-green); background: var(--color-green-light); font-weight: 600; }
-.golfer-option.disabled { opacity: 0.5; cursor: not-allowed; }
-.golfer-option-rank { color: var(--color-text-muted); font-size: 0.8rem; }
-.golfer-option-country { color: var(--color-text-muted); font-size: 0.8rem; margin-left: auto; }
 
-.bucket-section { margin-bottom: 20px; }
-.bucket-label { margin-bottom: 8px; color: var(--color-green); }
-.bucket-selected-name { color: var(--color-text); font-weight: 400; }
+.tournament-status {
+  display: inline-block;
+  background: var(--color-green-light);
+  color: var(--color-green);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
 
-.file-upload { margin-bottom: 16px; }
-.file-upload-label { display: block; font-weight: 600; margin-bottom: 4px; }
-.file-selected { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.btn-clear-file { background: none; border: none; color: var(--color-error); cursor: pointer; font-size: 0.85rem; }
+.home-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+/* ================================================================
+   Rules Page
+   ================================================================ */
+
+.rules-page {
+  max-width: 680px;
+}
+
+.rules-list {
+  padding-left: 0;
+  margin-bottom: 28px;
+  counter-reset: rules;
+  list-style: none;
+}
+
+.rules-list li {
+  margin-bottom: 12px;
+  padding: 14px 16px 14px 52px;
+  background: var(--color-white);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-light);
+  position: relative;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  counter-increment: rules;
+}
+
+.rules-list li::before {
+  content: counter(rules);
+  position: absolute;
+  left: 16px;
+  top: 13px;
+  width: 26px;
+  height: 26px;
+  background: var(--color-green);
+  color: var(--color-white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.rules-details {
+  background: var(--color-gold-light);
+  padding: 20px 24px;
+  border-radius: var(--radius);
+  border-left: 4px solid var(--color-gold);
+}
+
+.rules-details ul {
+  padding-left: 20px;
+  margin-top: 8px;
+}
+
+.rules-details li {
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+  color: var(--color-text-secondary);
+}
+
+/* ================================================================
+   Forms
+   ================================================================ */
+
+.entry-form {
+  max-width: 640px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.form-group input[type='email'],
+.form-group input[type='text'] {
+  width: 100%;
+  max-width: 420px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-white);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  min-height: 44px; /* touch target */
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.12);
+}
+
+/* ================================================================
+   Golfer Pickers
+   ================================================================ */
+
+.picker-instruction {
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--color-green);
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  background: var(--color-green-light);
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+.golfer-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.golfer-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.9rem;
+  transition: all var(--transition);
+  min-height: 48px; /* touch target */
+}
+
+.golfer-option:hover:not(:disabled) {
+  border-color: var(--color-green);
+  box-shadow: var(--shadow-sm);
+}
+
+.golfer-option.selected {
+  border-color: var(--color-green);
+  background: var(--color-green-light);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--color-green);
+}
+
+.golfer-option.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.golfer-option-name {
+  flex: 1;
+}
+
+.golfer-option-rank {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.golfer-option-country {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+/* Bucket Picker */
+
+.bucket-section {
+  margin-bottom: 28px;
+}
+
+.bucket-label {
+  margin-bottom: 10px;
+  color: var(--color-green);
+  font-size: 1rem;
+  font-weight: 700;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--color-green-light);
+}
+
+.bucket-selected-name {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+/* ================================================================
+   Validation & Errors
+   ================================================================ */
 
 .validation-errors {
-  background: var(--color-error-bg); border: 1px solid var(--color-error);
-  border-radius: 4px; padding: 12px; margin-bottom: 16px;
+  background: var(--color-error-bg);
+  border: 1px solid rgba(198, 40, 40, 0.3);
+  border-left: 4px solid var(--color-error);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 20px;
 }
-.validation-errors ul { padding-left: 20px; }
-.validation-errors li { color: var(--color-error); margin-bottom: 4px; }
-.submit-error { color: var(--color-error); margin-bottom: 16px; }
+
+.validation-errors ul {
+  padding-left: 18px;
+}
+
+.validation-errors li {
+  color: var(--color-error);
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.submit-error {
+  color: var(--color-error);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+/* ================================================================
+   Confirmation Page
+   ================================================================ */
+
+.confirmation-page h1 {
+  color: var(--color-success);
+}
 
 .confirmation-details {
-  background: var(--color-white); border: 1px solid var(--color-border);
-  border-radius: 4px; padding: 20px; margin-bottom: 20px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
 }
-.confirmation-details p { margin-bottom: 8px; }
-.confirmation-golfers ol { padding-left: 24px; }
-.confirmation-actions { display: flex; gap: 12px; }
 
-.leaderboard-wrapper { overflow: hidden; }
+.confirmation-details p {
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.confirmation-details strong {
+  color: var(--color-text);
+}
+
+.confirmation-golfers {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.confirmation-golfers ol {
+  padding-left: 24px;
+}
+
+.confirmation-golfers li {
+  margin-bottom: 4px;
+  font-size: 0.92rem;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* ================================================================
+   Leaderboard
+   ================================================================ */
+
+.leaderboard-wrapper {
+  overflow: hidden;
+  background: var(--color-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border-light);
+}
+
 .leaderboard-meta {
-  display: flex; justify-content: space-between; margin-bottom: 12px;
-  font-size: 0.9rem; color: var(--color-text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
 }
-.leaderboard-scroll { overflow-x: auto; }
 
-.leaderboard-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
-.leaderboard-table th {
-  background: var(--color-green); color: var(--color-white);
-  padding: 8px 12px; text-align: left; font-weight: 600;
+.leaderboard-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
-.leaderboard-table td { padding: 6px 12px; border-bottom: 1px solid var(--color-border); }
-.leaderboard-table tbody tr:nth-child(even) { background: var(--color-white); }
-.leaderboard-table tbody tr:nth-child(odd) { background: #fafaf7; }
-.entry-not-qualified { opacity: 0.7; }
-.col-pos { width: 50px; text-align: center; font-weight: 700; }
-.col-total { font-weight: 700; }
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.leaderboard-table th {
+  background: var(--color-green);
+  color: var(--color-white);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+}
+
+.leaderboard-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-border-light);
+  vertical-align: middle;
+}
+
+.leaderboard-table tbody tr {
+  transition: background var(--transition);
+}
+
+.leaderboard-table tbody tr:nth-child(even) {
+  background: var(--color-white);
+}
+
+.leaderboard-table tbody tr:nth-child(odd) {
+  background: #fafaf6;
+}
+
+.leaderboard-table tbody tr:hover {
+  background: var(--color-green-light);
+}
+
+.entry-not-qualified {
+  opacity: 0.6;
+}
+
+.col-pos {
+  width: 52px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--color-green);
+}
+
+.col-entry {
+  font-weight: 600;
+}
+
+.col-total {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+/* Qualification badges */
 
 .qualification-badge {
-  display: inline-block; padding: 2px 6px; border-radius: 3px;
-  font-size: 0.75rem; font-weight: 700; margin-right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  margin-right: 6px;
+  letter-spacing: 0.02em;
 }
-.qualification-badge.qualified { background: var(--color-green-light); color: var(--color-green); }
-.qualification-badge.not-qualified { background: #f5f5f5; color: var(--color-cut); }
-.qualification-note { font-size: 0.75rem; color: var(--color-text-muted); }
 
-.golfer-cell { min-width: 140px; }
-.golfer-name { display: block; font-weight: 500; font-size: 0.8rem; }
-.golfer-score { display: block; font-size: 0.75rem; color: var(--color-text-muted); }
-.golfer-not-counted .golfer-name { color: var(--color-cut); }
-.golfer-inactive .golfer-name { color: var(--color-cut); text-decoration: line-through; }
+.qualification-badge.qualified {
+  background: var(--color-green);
+  color: var(--color-white);
+}
 
-.loading-state { display: flex; flex-direction: column; align-items: center; padding: 40px; }
+.qualification-badge.pending {
+  background: var(--color-pending);
+  color: var(--color-white);
+}
+
+.qualification-badge.not-qualified {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.qualification-note {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+/* Golfer cells in leaderboard */
+
+.golfer-cell {
+  min-width: 130px;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.golfer-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.golfer-score {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+.golfer-counted .golfer-name {
+  color: var(--color-text);
+}
+
+.golfer-not-counted .golfer-name {
+  color: var(--color-cut);
+}
+
+.golfer-dropped .golfer-name {
+  color: var(--color-cut);
+  font-style: italic;
+}
+
+.golfer-inactive .golfer-name {
+  color: var(--color-cut);
+  text-decoration: line-through;
+}
+
+/* ================================================================
+   Loading / Error / Empty States
+   ================================================================ */
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+}
+
 .loading-spinner {
-  width: 32px; height: 32px; border: 3px solid var(--color-border);
-  border-top-color: var(--color-green); border-radius: 50%;
-  animation: spin 0.8s linear infinite; margin-bottom: 12px;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-.error-state { text-align: center; padding: 40px; }
-.error-state .error-message { color: var(--color-error); margin-bottom: 16px; }
-.empty-state { text-align: center; padding: 40px; color: var(--color-text-muted); }
-.empty-state h3 { margin-bottom: 8px; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
-.lookup-form { margin-bottom: 24px; }
-.lookup-results h2 { margin-bottom: 16px; }
+.loading-state p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.error-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.error-state .error-message {
+  color: var(--color-error);
+  margin-bottom: 20px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+}
+
+.empty-state h3 {
+  margin-bottom: 8px;
+  color: var(--color-text-secondary);
+}
+
+/* ================================================================
+   Lookup Page
+   ================================================================ */
+
+.lookup-form {
+  margin-bottom: 28px;
+  max-width: 420px;
+}
+
+.lookup-results h2 {
+  margin-bottom: 16px;
+}
+
 .lookup-entry-card {
-  background: var(--color-white); border: 1px solid var(--color-border);
-  border-radius: 4px; padding: 16px; margin-bottom: 12px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition);
 }
-.lookup-entry-card ul { padding-left: 20px; margin-top: 8px; }
-.lookup-entry-card p { margin-bottom: 4px; }
 
-@media (max-width: 600px) {
-  .header-nav { gap: 10px; font-size: 0.8rem; }
-  .home-actions { flex-direction: column; }
-  .golfer-list { grid-template-columns: 1fr; }
-  .confirmation-actions { flex-direction: column; }
+.lookup-entry-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.lookup-entry-card ul {
+  padding-left: 20px;
+  margin-top: 10px;
+}
+
+.lookup-entry-card li {
+  font-size: 0.9rem;
+  margin-bottom: 3px;
+}
+
+.lookup-entry-card p {
+  margin-bottom: 5px;
+  font-size: 0.92rem;
+}
+
+/* ================================================================
+   Mobile: Tablets (768px)
+   ================================================================ */
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 24px 16px 40px;
+  }
+
+  .page h1 {
+    font-size: 1.5rem;
+  }
+
+  .home-page h1 {
+    font-size: 1.6rem;
+  }
+
+  .tournament-info {
+    padding: 20px;
+  }
+
+  .golfer-list {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .leaderboard-meta {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+}
+
+/* ================================================================
+   Mobile: Phones (480px)
+   ================================================================ */
+
+@media (max-width: 480px) {
+  :root {
+    --header-height: 56px;
+  }
+
+  .header-inner {
+    padding: 0 12px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .header {
+    height: auto;
+    padding: 10px 0;
+  }
+
+  .header-title {
+    font-size: 1rem;
+  }
+
+  .header-nav {
+    gap: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .header-nav a {
+    font-size: 0.78rem;
+    padding: 5px 8px;
+  }
+
+  .main-content {
+    padding: 20px 14px 36px;
+  }
+
+  .page h1 {
+    font-size: 1.35rem;
+  }
+
+  .home-page h1 {
+    font-size: 1.4rem;
+  }
+
+  .home-actions {
+    flex-direction: column;
+  }
+
+  .home-actions .btn {
+    width: 100%;
+  }
+
+  .tournament-info {
+    padding: 16px;
+  }
+
+  .golfer-list {
+    grid-template-columns: 1fr;
+  }
+
+  .golfer-option {
+    padding: 14px;
+  }
+
+  .picker-instruction {
+    font-size: 0.88rem;
+    display: block;
+  }
+
+  .form-group input[type='email'],
+  .form-group input[type='text'] {
+    max-width: 100%;
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px 20px;
+  }
+
+  .confirmation-actions {
+    flex-direction: column;
+  }
+
+  .confirmation-actions .btn {
+    width: 100%;
+  }
+
+  .confirmation-details {
+    padding: 16px;
+  }
+
+  .rules-list li {
+    padding: 12px 14px 12px 48px;
+  }
+
+  .rules-details {
+    padding: 16px;
+  }
+
+  .lookup-form {
+    max-width: 100%;
+  }
+
+  .lookup-entry-card {
+    padding: 14px;
+  }
+
+  /* Leaderboard: tighter cells on mobile */
+  .leaderboard-table th {
+    padding: 8px 10px;
+    font-size: 0.72rem;
+  }
+
+  .leaderboard-table td {
+    padding: 6px 10px;
+  }
+
+  .golfer-cell {
+    min-width: 110px;
+  }
+
+  .qualification-note {
+    display: none; /* save space, badge is enough */
+  }
 }
