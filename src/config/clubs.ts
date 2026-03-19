@@ -1,5 +1,9 @@
 import type { ClubCode, ClubConfig } from '../types/domain';
 
+// ClubConfig provides UI-specific configuration for each club.
+// Scoring rules (pick_count, count_best, min_cuts_to_qualify, uses_buckets) are
+// authoritative on the backend via pool.rules_json; these frontend values are used
+// for UI rendering and client-side validation only.
 export const CLUB_CONFIGS: Record<ClubCode, ClubConfig> = {
   rvcc: {
     code: 'rvcc',
@@ -10,8 +14,6 @@ export const CLUB_CONFIGS: Record<ClubCode, ClubConfig> = {
     countedScores: 5,
     useBuckets: false,
     maxEntriesPerEmail: 3,
-    uploadEnabled: true,
-    uploadRequired: false,
     rulesDescription: [
       'Pick any 7 golfers from the field.',
       'At least 5 of your golfers must make the cut to qualify.',
@@ -30,8 +32,6 @@ export const CLUB_CONFIGS: Record<ClubCode, ClubConfig> = {
     useBuckets: true,
     bucketLabels: ['Bucket A', 'Bucket B', 'Bucket C', 'Bucket D', 'Bucket E', 'Bucket F'],
     maxEntriesPerEmail: 2,
-    uploadEnabled: false,
-    uploadRequired: false,
     rulesDescription: [
       'Pick 1 golfer from each of the 6 buckets.',
       'At least 4 of your golfers must make the cut to qualify.',

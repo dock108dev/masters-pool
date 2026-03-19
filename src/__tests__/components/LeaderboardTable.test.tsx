@@ -12,7 +12,7 @@ const crestmontConfig = CLUB_CONFIGS['crestmont'];
 
 describe('LeaderboardTable', () => {
   it('renders empty state when no entries', () => {
-    const emptyData = { ...MOCK_RVCC_LEADERBOARD, entries: [] };
+    const emptyData = { ...MOCK_RVCC_LEADERBOARD, standings: [] };
     render(<LeaderboardTable data={emptyData} clubConfig={rvccConfig} />);
     expect(screen.getByText('No entries yet')).toBeInTheDocument();
   });
@@ -22,7 +22,7 @@ describe('LeaderboardTable', () => {
     const table = screen.getByTestId('leaderboard-table');
     const tbody = table.querySelector('tbody')!;
     const rows = within(tbody).getAllByRole('row');
-    expect(rows).toHaveLength(MOCK_RVCC_LEADERBOARD.entries.length);
+    expect(rows).toHaveLength(MOCK_RVCC_LEADERBOARD.standings.length);
   });
 
   it('renders 7 golfer columns for RVCC', () => {
@@ -48,10 +48,10 @@ describe('LeaderboardTable', () => {
     });
   });
 
-  it('shows last updated timestamp', () => {
+  it('shows last scored timestamp', () => {
     render(<LeaderboardTable data={MOCK_RVCC_LEADERBOARD} clubConfig={rvccConfig} />);
-    // The formatted date will contain "Last updated:" prefix
-    expect(screen.getByText(/Last updated:/)).toBeInTheDocument();
+    // The component renders "Last scored: <formatted date>"
+    expect(screen.getByText(/Last scored:/)).toBeInTheDocument();
   });
 
   it('shows qualification badge (Q/NQ)', () => {
@@ -65,9 +65,9 @@ describe('LeaderboardTable', () => {
 
   it('shows position and total score', () => {
     render(<LeaderboardTable data={MOCK_RVCC_LEADERBOARD} clubConfig={rvccConfig} />);
-    // First entry: position '1', total '-15'
+    // First entry: rank 1, aggregate_score -15
     expect(screen.getByText('-15')).toBeInTheDocument();
-    // Check position cells exist (there are two '1' and '2' entries)
+    // Check position cells exist
     const table = screen.getByTestId('leaderboard-table');
     const tbody = table.querySelector('tbody')!;
     const rows = within(tbody).getAllByRole('row');

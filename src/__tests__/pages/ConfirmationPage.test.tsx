@@ -8,11 +8,15 @@ import type { EntrySubmissionResponse } from '../../types/domain';
 const rvccConfig = getClubConfig('rvcc');
 
 const mockConfirmation: EntrySubmissionResponse = {
-  entryId: 'entry-test-001',
+  entry_id: 9001,
   confirmationCode: 'CONF-TEST99',
   email: 'user@example.com',
-  displayName: 'Test Player',
-  golferNames: ['Scottie Scheffler', 'Rory McIlroy', 'Jon Rahm'],
+  entry_name: 'Test Player',
+  picks: [
+    { dg_id: 18417, pick_slot: 1 },
+    { dg_id: 28237, pick_slot: 2 },
+    { dg_id: 21209, pick_slot: 3 },
+  ],
   submittedAt: '2026-04-09T10:00:00Z',
 };
 
@@ -68,16 +72,17 @@ describe('ConfirmationPage', () => {
       expect(screen.getByText(/user@example\.com/)).toBeInTheDocument();
     });
 
-    it('shows the display name', () => {
+    it('shows the entry name', () => {
       renderConfirmationPage({ confirmation: mockConfirmation });
       expect(screen.getByText(/Test Player/)).toBeInTheDocument();
     });
 
     it('shows the list of golfer picks', () => {
       renderConfirmationPage({ confirmation: mockConfirmation });
-      expect(screen.getByText('Scottie Scheffler')).toBeInTheDocument();
-      expect(screen.getByText('Rory McIlroy')).toBeInTheDocument();
-      expect(screen.getByText('Jon Rahm')).toBeInTheDocument();
+      // ConfirmationPage renders picks as "Pick N: dg_id XXXXX"
+      expect(screen.getByText(/Pick 1: dg_id 18417/)).toBeInTheDocument();
+      expect(screen.getByText(/Pick 2: dg_id 28237/)).toBeInTheDocument();
+      expect(screen.getByText(/Pick 3: dg_id 21209/)).toBeInTheDocument();
     });
 
     it('renders the confirmation page container', () => {

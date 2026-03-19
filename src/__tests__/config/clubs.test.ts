@@ -64,7 +64,6 @@ describe('isValidClubCode', () => {
   it('acts as a type guard — narrows string to ClubCode', () => {
     const code: string = 'rvcc';
     if (isValidClubCode(code)) {
-      // TypeScript would narrow `code` to ClubCode here
       const cfg = getClubConfig(code as ClubCode);
       expect(cfg).toBeDefined();
     }
@@ -109,12 +108,12 @@ describe('RVCC club config', () => {
     expect(rvcc.bucketLabels).toBeUndefined();
   });
 
-  it('has uploadEnabled set to true', () => {
-    expect(rvcc.uploadEnabled).toBe(true);
+  it('does not have uploadEnabled property (file upload is admin-only)', () => {
+    expect((rvcc as Record<string, unknown>).uploadEnabled).toBeUndefined();
   });
 
-  it('has uploadRequired set to false (upload is optional)', () => {
-    expect(rvcc.uploadRequired).toBe(false);
+  it('does not have uploadRequired property (file upload is admin-only)', () => {
+    expect((rvcc as Record<string, unknown>).uploadRequired).toBeUndefined();
   });
 
   it('has a non-empty rulesDescription array', () => {
@@ -190,12 +189,12 @@ describe('Crestmont club config', () => {
     ]);
   });
 
-  it('has uploadEnabled set to false', () => {
-    expect(crestmont.uploadEnabled).toBe(false);
+  it('does not have uploadEnabled property (file upload is admin-only)', () => {
+    expect((crestmont as Record<string, unknown>).uploadEnabled).toBeUndefined();
   });
 
-  it('has uploadRequired set to false', () => {
-    expect(crestmont.uploadRequired).toBe(false);
+  it('does not have uploadRequired property (file upload is admin-only)', () => {
+    expect((crestmont as Record<string, unknown>).uploadRequired).toBeUndefined();
   });
 
   it('has a non-empty rulesDescription array', () => {
@@ -247,7 +246,6 @@ describe('CLUB_CONFIGS cross-config invariants', () => {
   });
 
   it('countedScores is less than or equal to cutMinimum for both configs', () => {
-    // countedScores must not exceed cutMinimum (you can only count scores of golfers who made the cut)
     for (const config of Object.values(CLUB_CONFIGS)) {
       expect(config.countedScores).toBeLessThanOrEqual(config.cutMinimum);
     }

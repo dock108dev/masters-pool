@@ -79,14 +79,16 @@ describe('LookupPage', () => {
     expect(screen.getByText(/CONF-ABC123/)).toBeInTheDocument();
   });
 
-  it('displays golfer names in lookup results', async () => {
+  it('displays pick slot and dg_id in lookup results', async () => {
     const user = userEvent.setup();
     renderLookupPage();
     await user.type(screen.getByTestId('lookup-email-input'), 'test@example.com');
     await user.click(screen.getByTestId('lookup-button'));
     await screen.findByTestId('lookup-results');
-    expect(screen.getByText('Scottie Scheffler')).toBeInTheDocument();
-    expect(screen.getByText('Rory McIlroy')).toBeInTheDocument();
+    // Mock returns picks with dg_ids 18417 (Scottie Scheffler) and 28237 (Rory McIlroy)
+    // LookupPage renders these as "Pick N: dg_id XXXXX"
+    expect(screen.getByText(/Pick 1: dg_id 18417/)).toBeInTheDocument();
+    expect(screen.getByText(/Pick 2: dg_id 28237/)).toBeInTheDocument();
   });
 
   it('displays the looked-up email in the results heading', async () => {

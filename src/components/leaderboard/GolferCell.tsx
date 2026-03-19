@@ -1,25 +1,29 @@
-import type { LeaderboardGolferCell } from '../../types/domain';
+import type { LeaderboardPick } from '../../types/domain';
+import { formatScore, formatThru } from '../../utils/formatting';
 
 interface GolferCellProps {
-  golfer: LeaderboardGolferCell;
+  pick: LeaderboardPick;
 }
 
-export function GolferCell({ golfer }: GolferCellProps) {
-  const isMissedCut = golfer.status === 'cut' || golfer.status === 'wd' || golfer.status === 'dq';
+export function GolferCell({ pick }: GolferCellProps) {
+  const isMissedCut = pick.status === 'cut' || pick.status === 'wd' || pick.status === 'dq';
   const className = [
     'golfer-cell',
-    golfer.isCounted ? 'golfer-counted' : 'golfer-not-counted',
+    pick.counts_toward_total ? 'golfer-counted' : 'golfer-not-counted',
+    pick.is_dropped ? 'golfer-dropped' : '',
     isMissedCut ? 'golfer-inactive' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
+  const scoreDisplay = isMissedCut
+    ? pick.status.toUpperCase()
+    : `${formatScore(pick.total_score)} / ${formatThru(pick.thru)}`;
+
   return (
-    <td className={className} data-testid={`golfer-cell-${golfer.golferId}`}>
-      <span className="golfer-name">{golfer.golferName}</span>
-      <span className="golfer-score">
-        {isMissedCut ? golfer.displayScore : `${golfer.displayScore} / ${golfer.thru}`}
-      </span>
+    <td className={className} data-testid={`golfer-cell-${pick.dg_id}`}>
+      <span className="golfer-name">{pick.player_name}</span>
+      <span className="golfer-score">{scoreDisplay}</span>
     </td>
   );
 }

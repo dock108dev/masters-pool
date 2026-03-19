@@ -1,12 +1,10 @@
 import type { ApiClient } from '../types';
-import type { ClubCode } from '../../types/domain';
+import type { ClubCode, EntrySubmissionRequest } from '../../types/domain';
 import {
-  MOCK_RVCC_TOURNAMENT_SUMMARY,
-  MOCK_CRESTMONT_TOURNAMENT_SUMMARY,
-  MOCK_RVCC_TOURNAMENT_DETAIL,
-  MOCK_CRESTMONT_TOURNAMENT_DETAIL,
-  MOCK_AVAILABLE_GOLFERS,
-  MOCK_GOLFER_BUCKETS,
+  MOCK_RVCC_POOL,
+  MOCK_CRESTMONT_POOL,
+  MOCK_RVCC_FIELD,
+  MOCK_CRESTMONT_FIELD,
   MOCK_RVCC_LEADERBOARD,
   MOCK_CRESTMONT_LEADERBOARD,
 } from './data';
@@ -20,69 +18,60 @@ export class MockApiClient implements ApiClient {
     this.latencyMs = latencyMs;
   }
 
-  async getActiveTournament(clubCode: ClubCode) {
+  async getActivePool(clubCode: ClubCode) {
     await delay(this.latencyMs);
-    if (clubCode === 'rvcc') return MOCK_RVCC_TOURNAMENT_SUMMARY;
-    if (clubCode === 'crestmont') return MOCK_CRESTMONT_TOURNAMENT_SUMMARY;
+    if (clubCode === 'rvcc') return MOCK_RVCC_POOL;
+    if (clubCode === 'crestmont') return MOCK_CRESTMONT_POOL;
     return null;
   }
 
-  async getTournamentDetail(tournamentId: string) {
+  async getPoolDetail(poolId: number) {
     await delay(this.latencyMs);
-    if (tournamentId.includes('crestmont')) return MOCK_CRESTMONT_TOURNAMENT_DETAIL;
-    return MOCK_RVCC_TOURNAMENT_DETAIL;
+    if (poolId === MOCK_CRESTMONT_POOL.id) return MOCK_CRESTMONT_POOL;
+    return MOCK_RVCC_POOL;
   }
 
-  async getAvailableGolfers(_tournamentId: string) {
+  async getPoolField(poolId: number) {
     await delay(this.latencyMs);
-    return MOCK_AVAILABLE_GOLFERS;
+    if (poolId === MOCK_CRESTMONT_FIELD.pool_id) return MOCK_CRESTMONT_FIELD;
+    return MOCK_RVCC_FIELD;
   }
 
-  async getGolferBuckets(_tournamentId: string) {
+  async submitEntry(_poolId: number, request: EntrySubmissionRequest) {
     await delay(this.latencyMs);
-    return MOCK_GOLFER_BUCKETS;
-  }
-
-  async submitEntry(request: Parameters<ApiClient['submitEntry']>[0]) {
-    await delay(this.latencyMs);
-    const golferNames = MOCK_AVAILABLE_GOLFERS
-      .filter((g) => request.golferIds.includes(g.id))
-      .map((g) => g.name);
-
     return {
-      entryId: `entry-${Date.now()}`,
+      entry_id: Date.now(),
       confirmationCode: `CONF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
       email: request.email,
-      displayName: request.displayName,
-      golferNames,
+      entry_name: request.entry_name,
+      picks: request.picks,
       submittedAt: new Date().toISOString(),
     };
   }
 
-  async getLeaderboard(tournamentId: string) {
+  async getLeaderboard(poolId: number) {
     await delay(this.latencyMs);
-    if (tournamentId.includes('crestmont')) return MOCK_CRESTMONT_LEADERBOARD;
+    if (poolId === MOCK_CRESTMONT_LEADERBOARD.pool_id) return MOCK_CRESTMONT_LEADERBOARD;
     return MOCK_RVCC_LEADERBOARD;
   }
 
-  async lookupEntries(_clubCode: ClubCode, email: string) {
+  async lookupEntries(_poolId: number, email: string) {
     await delay(this.latencyMs);
     return {
       email,
       entries: [
         {
-          entryId: 'entry-mock-1',
-          displayName: 'Mock Entry',
-          golferNames: ['Scottie Scheffler', 'Rory McIlroy', 'Jon Rahm'],
+          entry_id: 9001,
+          entry_name: 'Mock Entry',
+          picks: [
+            { dg_id: 18417, pick_slot: 1 },
+            { dg_id: 28237, pick_slot: 2 },
+            { dg_id: 21209, pick_slot: 3 },
+          ],
           submittedAt: '2026-04-01T10:00:00Z',
           confirmationCode: 'CONF-ABC123',
         },
       ],
     };
-  }
-
-  async uploadFile(_file: File, _entryId: string) {
-    await delay(this.latencyMs);
-    return { url: 'https://placeholder.example.com/uploads/mock-file' };
   }
 }

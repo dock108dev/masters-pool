@@ -1,99 +1,105 @@
 # Masters Pool Web
 
-Golf country club pool web app supporting multiple clubs (RVCC, Crestmont) with shared architecture, club-specific rules, and mock-backed API layer.
+Golf country club pool frontend for the Masters tournament. Supports multiple clubs (RVCC, Crestmont) with shared components, club-specific rules, and a typed API client layer aligned with the [sports-data-admin](https://github.com/dock108dev/sports-data-admin) backend.
+
+Currently runs against mock data. Swap one line in `src/api/client.ts` to connect to the real backend.
 
 ## Quick Start
 
 ```bash
 npm install
-npm run dev          # Start dev server
-npm run test         # Run tests
-npm run test:watch   # Run tests in watch mode
-npm run build        # Production build
+npm run dev            # Dev server at http://localhost:5173
+npm run test           # Run all tests
+npm run test:watch     # Watch mode
+npm run test:coverage  # Coverage report (v8)
+npm run build          # Production build → dist/
 ```
 
 ## Club Configuration
 
-Each club is driven by a `ClubConfig` object in `src/config/clubs.ts`. The config controls:
+Each club is defined in `src/config/clubs.ts` as a `ClubConfig` object controlling:
 
-- **Pick rules**: number of golfers, bucket mode, cut minimums, counted scores
+- **Pick rules**: number of golfers, bucket mode, cut minimums, scored count
 - **UI labels**: club name, rules text, bucket labels, leaderboard column headers
-- **Features**: file upload enabled/required, max entries per email
+- **Limits**: max entries per email
 
-Routes are club-scoped: `/:clubCode/entry`, `/:clubCode/leaderboard`, etc. The app defaults to `/rvcc`.
+The frontend `ClubConfig` is for UI rendering and client-side validation. The backend's `pool.rules_json` is authoritative for scoring.
 
-### RVCC Rules
-- Pick any 7 golfers. At least 5 must make the cut. Best 5 scores count.
+Routes are club-scoped: `/:clubCode/entry`, `/:clubCode/leaderboard`, etc. Root (`/`) redirects to `/rvcc`.
 
-### Crestmont Rules
-- Pick 1 golfer from each of 6 buckets. At least 4 must make the cut. Best 4 scores count.
+### RVCC
+Pick any 7 golfers. At least 5 must make the cut. Best 5 scores count. Lowest aggregate wins.
 
-To add a new club: add a new entry to `CLUB_CONFIGS` in `src/config/clubs.ts`.
+### Crestmont
+Pick 1 golfer from each of 6 buckets. At least 4 must make the cut. Best 4 scores count. Lowest aggregate wins.
 
-## API Contracts
+## Backend API
 
-The app consumes an `ApiClient` interface (`src/api/types.ts`) with these endpoints:
+The app consumes the `sports-data-admin` Golf Pools API via a typed `ApiClient` interface (`src/api/types.ts`):
 
-| Method | Description |
-|---|---|
-| `getActiveTournament(clubCode)` | Get active tournament for a club |
-| `getTournamentDetail(id)` | Get tournament detail |
-| `getAvailableGolfers(id)` | Get selectable golfers |
-| `getGolferBuckets(id)` | Get bucket-grouped golfers (Crestmont) |
-| `submitEntry(request)` | Submit a pool entry |
-| `getLeaderboard(id)` | Get live leaderboard data |
-| `lookupEntries(clubCode, email)` | Look up entries by email |
-| `uploadFile(file, entryId)` | Upload entry form file |
+| Method | Backend Endpoint | Description |
+|---|---|---|
+| `getActivePool(clubCode)` | `GET /api/golf/pools?club_code={code}&active_only=true` | Find the active pool for a club |
+| `getPoolDetail(poolId)` | `GET /api/golf/pools/{poolId}` | Pool detail with rules and status |
+| `getPoolField(poolId)` | `GET /api/golf/pools/{poolId}/field` | Selectable golfers (flat or bucketed) |
+| `submitEntry(poolId, request)` | `POST /api/golf/pools/{poolId}/entries` | Submit entry with picks |
+| `getLeaderboard(poolId)` | `GET /api/golf/pools/{poolId}/leaderboard` | Materialized standings |
+| `lookupEntries(poolId, email)` | `GET /api/golf/pools/{poolId}/entries/by-email?email=...` | Look up entries by email |
 
-All request/response types are in `src/types/domain.ts`.
+The backend uses `X-API-Key` header authentication. All golfers are identified by DataGolf `dg_id` (number). Buckets use 1-indexed `bucket_number`. See `docs/api-contracts.md` for full request/response shapes.
 
-## Swapping Mock APIs for Real APIs
+### Swapping Mocks for Real API
 
-1. Create a new class implementing `ApiClient` (e.g., `HttpApiClient`) that calls real endpoints
-2. Update `src/api/client.ts` to instantiate `HttpApiClient` instead of `MockApiClient`
-3. Endpoint URL patterns are defined in `src/api/types.ts` (`API_ENDPOINTS`)
+1. Implement the `ApiClient` interface with `fetch` calls (endpoint patterns are in `API_ENDPOINTS`)
+2. Update `src/api/client.ts` to export the new client instead of `MockApiClient`
 
-The mock adapter (`src/api/mock/adapters.ts`) and mock data (`src/api/mock/data.ts`) can be kept for testing.
+Mock adapter and data are kept for tests.
 
 ## Project Structure
 
 ```
 src/
-  types/domain.ts          # All domain types
-  config/clubs.ts          # Club configurations
+  types/domain.ts           # All domain types (aligned with backend API shapes)
+  config/clubs.ts           # ClubConfig for RVCC and Crestmont
   api/
-    types.ts               # ApiClient interface + endpoint URLs
-    client.ts              # Active API client (swap here)
+    types.ts                # ApiClient interface + API_ENDPOINTS
+    client.ts               # Active client instance (swap mock → real here)
     mock/
-      adapters.ts          # MockApiClient implementation
-      data.ts              # Deterministic mock data
+      adapters.ts           # MockApiClient with configurable latency
+      data.ts               # Deterministic mock data
   components/
-    layout/                # Header, Footer, Layout
-    common/                # LoadingState, ErrorState, EmptyState
-    leaderboard/           # LeaderboardTable, GolferCell
-    entry/                 # GolferPicker, BucketPicker, FileUpload
-  pages/                   # HomePage, RulesPage, EntryPage, etc.
-  hooks/                   # useClubConfig, useApi
+    layout/                 # Header, Footer, Layout
+    common/                 # LoadingState, ErrorState, EmptyState
+    leaderboard/            # LeaderboardTable, GolferCell
+    entry/                  # GolferPicker (RVCC), BucketPicker (Crestmont)
+  pages/                    # HomePage, RulesPage, EntryPage, ConfirmationPage,
+                            # LeaderboardPage, LookupPage, ClubRoot, PageWrappers
+  hooks/                    # useClubConfig, useApi
   utils/
-    formatting.ts          # Display formatters
-    validation.ts          # Entry form validators
-  __tests__/               # All test files mirroring src structure
+    formatting.ts           # Score, position, thru display formatters
+    validation.ts           # Email, name, pick count, bucket enforcement
+  __tests__/                # Mirrors src/ structure
 ```
 
 ## Testing
 
 ```bash
-npm run test              # Run all tests
-npm run test:coverage     # Run with coverage report
+npm run test              # 347 tests across 19 files
+npm run test:coverage     # With v8 coverage report
 ```
 
-349 tests across 20 test files covering:
-- Club config validation
-- Entry form validation (RVCC open pick, Crestmont bucket-based)
-- Duplicate pick prevention and bucket enforcement
-- Leaderboard rendering (golfer cells, qualification badges, column headers)
-- Loading / error / empty states
-- Mock API adapter behavior
-- Mock data consistency
-- Page-level integration tests for all major pages
-- Formatting helpers
+Coverage areas:
+- Club config driven rendering (RVCC vs Crestmont)
+- Pick validation (count, duplicates, bucket enforcement)
+- Leaderboard rendering (standings, golfer cells, qualification badges)
+- Loading, error, and empty states
+- Mock API adapter behavior and data consistency
+- Page-level integration tests for all screens
+- Formatting and validation helpers
+
+## Key Design Decisions
+
+- **No scoring logic in the frontend.** The backend computes rankings, qualification status, counted/dropped picks, and aggregate scores. The frontend only displays pre-computed results.
+- **No authentication.** Entry submission uses email as identifier. The backend enforces entry limits and deadlines.
+- **File upload is admin-only.** CSV bulk import is a backend admin feature, not a self-service frontend flow.
+- **Club config is duplicated intentionally.** The frontend `ClubConfig` drives UI (labels, validation hints). The backend `rules_json` is authoritative for scoring. They must stay in sync manually.

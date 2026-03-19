@@ -1,7 +1,7 @@
 import type { LeaderboardData, ClubConfig } from '../../types/domain';
 import { GolferCell } from './GolferCell';
 import { EmptyState } from '../common/EmptyState';
-import { formatLastUpdated } from '../../utils/formatting';
+import { formatScore, formatLastUpdated } from '../../utils/formatting';
 
 interface LeaderboardTableProps {
   data: LeaderboardData;
@@ -9,7 +9,7 @@ interface LeaderboardTableProps {
 }
 
 export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
-  if (data.entries.length === 0) {
+  if (data.standings.length === 0) {
     return <EmptyState title="No entries yet" description="The leaderboard will populate once entries are submitted." />;
   }
 
@@ -20,8 +20,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
   return (
     <div className="leaderboard-wrapper">
       <div className="leaderboard-meta">
-        <span>Round {data.currentRound ?? '-'}</span>
-        <span className="last-updated">Last updated: {formatLastUpdated(data.lastUpdated)}</span>
+        <span className="last-updated">Last scored: {formatLastUpdated(data.last_scored_at)}</span>
       </div>
       <div className="leaderboard-scroll">
         <table className="leaderboard-table" data-testid="leaderboard-table">
@@ -38,23 +37,37 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
             </tr>
           </thead>
           <tbody>
-            {data.entries.map((entry) => (
-              <tr key={entry.entryId} className={entry.isQualified ? 'entry-qualified' : 'entry-not-qualified'}>
-                <td className="col-pos">{entry.displayPosition}</td>
-                <td className="col-entry">{entry.entryName}</td>
-                <td className="col-total">{entry.displayTotal}</td>
-                <td className="col-status">
-                  <span className={`qualification-badge ${entry.isQualified ? 'qualified' : 'not-qualified'}`}>
-                    {entry.isQualified ? 'Q' : 'NQ'}
-                  </span>
-                  <span className="qualification-note">{entry.qualificationNote}</span>
-                </td>
-                <td className="col-counted">{entry.countedCount}</td>
-                {entry.golfers.map((golfer) => (
-                  <GolferCell key={golfer.golferId} golfer={golfer} />
-                ))}
-              </tr>
-            ))}
+            {data.standings.map((standing) => {
+              const isQualified = standing.qualification_status === 'qualified';
+              const rankDisplay = standing.rank != null
+                ? `${standing.is_tied ? 'T' : ''}${standing.rank}`
+                : '-';
+
+              return (
+                <tr
+                  key={standing.entry_id}
+                  className={isQualified ? 'entry-qualified' : 'entry-not-qualified'}
+                >
+                  <td className="col-pos">{rankDisplay}</td>
+                  <td className="col-entry">{standing.entry_name}</td>
+                  <td className="col-total">{formatScore(standing.aggregate_score)}</td>
+                  <td className="col-status">
+                    <span
+                      className={`qualification-badge ${isQualified ? 'qualified' : standing.qualification_status === 'pending' ? 'pending' : 'not-qualified'}`}
+                    >
+                      {isQualified ? 'Q' : standing.qualification_status === 'pending' ? 'P' : 'NQ'}
+                    </span>
+                    <span className="qualification-note">
+                      {standing.qualified_golfers_count} made cut
+                    </span>
+                  </td>
+                  <td className="col-counted">{standing.counted_golfers_count}</td>
+                  {standing.picks.map((pick) => (
+                    <GolferCell key={pick.dg_id} pick={pick} />
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

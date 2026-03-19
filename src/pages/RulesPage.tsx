@@ -23,9 +23,6 @@ export function RulesPage({ clubConfig }: RulesPageProps) {
           {clubConfig.maxEntriesPerEmail && (
             <li>Maximum {clubConfig.maxEntriesPerEmail} entries per email</li>
           )}
-          {clubConfig.uploadEnabled && (
-            <li>File upload is {clubConfig.uploadRequired ? 'required' : 'optional'}</li>
-          )}
         </ul>
       </div>
     </div>

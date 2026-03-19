@@ -1,157 +1,222 @@
 import { describe, it, expect } from 'vitest';
 import {
-  MOCK_AVAILABLE_GOLFERS,
-  MOCK_GOLFER_BUCKETS,
+  MOCK_RVCC_POOL,
+  MOCK_CRESTMONT_POOL,
+  MOCK_RVCC_FIELD,
+  MOCK_CRESTMONT_FIELD,
   MOCK_RVCC_LEADERBOARD,
   MOCK_CRESTMONT_LEADERBOARD,
-  MOCK_RVCC_TOURNAMENT_SUMMARY,
-  MOCK_CRESTMONT_TOURNAMENT_SUMMARY,
-  MOCK_RVCC_TOURNAMENT_DETAIL,
-  MOCK_CRESTMONT_TOURNAMENT_DETAIL,
 } from '../../api/mock/data';
 
 // ---------------------------------------------------------------------------
-// MOCK_AVAILABLE_GOLFERS
+// MOCK_RVCC_POOL
 // ---------------------------------------------------------------------------
 
-describe('MOCK_AVAILABLE_GOLFERS', () => {
-  it('has exactly 24 golfers', () => {
-    expect(MOCK_AVAILABLE_GOLFERS).toHaveLength(24);
+describe('MOCK_RVCC_POOL', () => {
+  it('has club_code "rvcc"', () => {
+    expect(MOCK_RVCC_POOL.club_code).toBe('rvcc');
   });
 
-  it('every golfer has id, name, ranking, and country', () => {
-    for (const golfer of MOCK_AVAILABLE_GOLFERS) {
-      expect(typeof golfer.id).toBe('string');
-      expect(golfer.id).toBeTruthy();
-      expect(typeof golfer.name).toBe('string');
-      expect(golfer.name).toBeTruthy();
-      expect(typeof golfer.country).toBe('string');
-      expect(golfer.country).toBeTruthy();
-      expect(golfer.ranking === null || typeof golfer.ranking === 'number').toBe(true);
-    }
+  it('name contains "RVCC"', () => {
+    expect(MOCK_RVCC_POOL.name).toContain('RVCC');
   });
 
-  it('all golfer ids are unique', () => {
-    const ids = MOCK_AVAILABLE_GOLFERS.map((g) => g.id);
-    expect(new Set(ids).size).toBe(24);
+  it('has a numeric id', () => {
+    expect(typeof MOCK_RVCC_POOL.id).toBe('number');
   });
 
-  it('all golfer names are unique', () => {
-    const names = MOCK_AVAILABLE_GOLFERS.map((g) => g.name);
-    expect(new Set(names).size).toBe(24);
+  it('has a non-empty code string', () => {
+    expect(typeof MOCK_RVCC_POOL.code).toBe('string');
+    expect(MOCK_RVCC_POOL.code).toBeTruthy();
   });
 
-  it('ids follow the pattern g1..g24', () => {
-    const ids = MOCK_AVAILABLE_GOLFERS.map((g) => g.id);
-    const expected = Array.from({ length: 24 }, (_, i) => `g${i + 1}`);
-    expect(ids).toEqual(expected);
+  it('has a valid PoolStatus', () => {
+    const validStatuses = ['draft', 'open', 'locked', 'live', 'final', 'archived'];
+    expect(validStatuses).toContain(MOCK_RVCC_POOL.status);
   });
 
-  it('rankings are 1 through 24 in order', () => {
-    const rankings = MOCK_AVAILABLE_GOLFERS.map((g) => g.ranking);
-    const expected = Array.from({ length: 24 }, (_, i) => i + 1);
-    expect(rankings).toEqual(expected);
+  it('has a numeric tournament_id', () => {
+    expect(typeof MOCK_RVCC_POOL.tournament_id).toBe('number');
   });
 
-  it('first golfer is Scottie Scheffler (ranking 1, USA)', () => {
-    expect(MOCK_AVAILABLE_GOLFERS[0]).toMatchObject({
-      id: 'g1',
-      name: 'Scottie Scheffler',
-      ranking: 1,
-      country: 'USA',
-    });
+  it('has a non-empty entry_deadline string', () => {
+    expect(typeof MOCK_RVCC_POOL.entry_deadline).toBe('string');
+    expect(MOCK_RVCC_POOL.entry_deadline).toBeTruthy();
   });
 
-  it('last golfer is Adam Scott (ranking 24, AUS)', () => {
-    expect(MOCK_AVAILABLE_GOLFERS[23]).toMatchObject({
-      id: 'g24',
-      name: 'Adam Scott',
-      ranking: 24,
-      country: 'AUS',
-    });
+  it('has a numeric max_entries_per_email', () => {
+    expect(typeof MOCK_RVCC_POOL.max_entries_per_email).toBe('number');
   });
 
-  it('contains golfers from multiple countries', () => {
-    const countries = new Set(MOCK_AVAILABLE_GOLFERS.map((g) => g.country));
-    expect(countries.size).toBeGreaterThan(1);
+  it('has a boolean scoring_enabled', () => {
+    expect(typeof MOCK_RVCC_POOL.scoring_enabled).toBe('boolean');
+  });
+
+  it('rules_json.uses_buckets is false', () => {
+    expect(MOCK_RVCC_POOL.rules_json.uses_buckets).toBe(false);
+  });
+
+  it('rules_json has pick_count, count_best, min_cuts_to_qualify', () => {
+    expect(typeof MOCK_RVCC_POOL.rules_json.pick_count).toBe('number');
+    expect(typeof MOCK_RVCC_POOL.rules_json.count_best).toBe('number');
+    expect(typeof MOCK_RVCC_POOL.rules_json.min_cuts_to_qualify).toBe('number');
   });
 });
 
 // ---------------------------------------------------------------------------
-// MOCK_GOLFER_BUCKETS
+// MOCK_CRESTMONT_POOL
 // ---------------------------------------------------------------------------
 
-describe('MOCK_GOLFER_BUCKETS', () => {
+describe('MOCK_CRESTMONT_POOL', () => {
+  it('has club_code "crestmont"', () => {
+    expect(MOCK_CRESTMONT_POOL.club_code).toBe('crestmont');
+  });
+
+  it('name contains "Crestmont"', () => {
+    expect(MOCK_CRESTMONT_POOL.name).toContain('Crestmont');
+  });
+
+  it('has a different id from RVCC pool', () => {
+    expect(MOCK_CRESTMONT_POOL.id).not.toBe(MOCK_RVCC_POOL.id);
+  });
+
+  it('rules_json.uses_buckets is true', () => {
+    expect(MOCK_CRESTMONT_POOL.rules_json.uses_buckets).toBe(true);
+  });
+
+  it('both pools share the same tournament_id', () => {
+    expect(MOCK_CRESTMONT_POOL.tournament_id).toBe(MOCK_RVCC_POOL.tournament_id);
+  });
+
+  it('both pools share the same entry_deadline', () => {
+    expect(MOCK_CRESTMONT_POOL.entry_deadline).toBe(MOCK_RVCC_POOL.entry_deadline);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MOCK_RVCC_FIELD
+// ---------------------------------------------------------------------------
+
+describe('MOCK_RVCC_FIELD', () => {
+  it('pool_id matches MOCK_RVCC_POOL.id', () => {
+    expect(MOCK_RVCC_FIELD.pool_id).toBe(MOCK_RVCC_POOL.id);
+  });
+
+  it('variant is "rvcc"', () => {
+    expect(MOCK_RVCC_FIELD.variant).toBe('rvcc');
+  });
+
+  it('has a players array', () => {
+    expect(Array.isArray(MOCK_RVCC_FIELD.players)).toBe(true);
+  });
+
+  it('does not have a buckets property', () => {
+    expect(MOCK_RVCC_FIELD.buckets).toBeUndefined();
+  });
+
+  it('has exactly 24 players', () => {
+    expect(MOCK_RVCC_FIELD.players).toHaveLength(24);
+  });
+
+  it('every player has a numeric dg_id', () => {
+    for (const player of MOCK_RVCC_FIELD.players!) {
+      expect(typeof player.dg_id).toBe('number');
+    }
+  });
+
+  it('every player has a non-empty player_name string', () => {
+    for (const player of MOCK_RVCC_FIELD.players!) {
+      expect(typeof player.player_name).toBe('string');
+      expect(player.player_name).toBeTruthy();
+    }
+  });
+
+  it('all dg_ids are unique', () => {
+    const ids = MOCK_RVCC_FIELD.players!.map((p) => p.dg_id);
+    expect(new Set(ids).size).toBe(24);
+  });
+
+  it('all player_names are unique', () => {
+    const names = MOCK_RVCC_FIELD.players!.map((p) => p.player_name);
+    expect(new Set(names).size).toBe(24);
+  });
+
+  it('first player is Scottie Scheffler with dg_id 18417', () => {
+    expect(MOCK_RVCC_FIELD.players![0]).toMatchObject({
+      dg_id: 18417,
+      player_name: 'Scottie Scheffler',
+    });
+  });
+
+  it('last player is Adam Scott with dg_id 10046', () => {
+    expect(MOCK_RVCC_FIELD.players![23]).toMatchObject({
+      dg_id: 10046,
+      player_name: 'Adam Scott',
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MOCK_CRESTMONT_FIELD
+// ---------------------------------------------------------------------------
+
+describe('MOCK_CRESTMONT_FIELD', () => {
+  it('pool_id matches MOCK_CRESTMONT_POOL.id', () => {
+    expect(MOCK_CRESTMONT_FIELD.pool_id).toBe(MOCK_CRESTMONT_POOL.id);
+  });
+
+  it('variant is "crestmont"', () => {
+    expect(MOCK_CRESTMONT_FIELD.variant).toBe('crestmont');
+  });
+
+  it('has a buckets array', () => {
+    expect(Array.isArray(MOCK_CRESTMONT_FIELD.buckets)).toBe(true);
+  });
+
+  it('does not have a flat players property', () => {
+    expect(MOCK_CRESTMONT_FIELD.players).toBeUndefined();
+  });
+
   it('has exactly 6 buckets', () => {
-    expect(MOCK_GOLFER_BUCKETS).toHaveLength(6);
+    expect(MOCK_CRESTMONT_FIELD.buckets).toHaveLength(6);
   });
 
-  it('each bucket has exactly 4 golfers', () => {
-    for (const bucket of MOCK_GOLFER_BUCKETS) {
-      expect(bucket.golfers).toHaveLength(4);
+  it('bucket_number values are 1 through 6 (1-indexed)', () => {
+    const numbers = MOCK_CRESTMONT_FIELD.buckets!.map((b) => b.bucket_number);
+    expect(numbers).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('each bucket has a non-empty label', () => {
+    for (const bucket of MOCK_CRESTMONT_FIELD.buckets!) {
+      expect(typeof bucket.label).toBe('string');
+      expect(bucket.label).toBeTruthy();
     }
   });
 
-  it('bucketIndex values are 0 through 5', () => {
-    const indices = MOCK_GOLFER_BUCKETS.map((b) => b.bucketIndex);
-    expect(indices).toEqual([0, 1, 2, 3, 4, 5]);
+  it('bucket labels are Bucket A through Bucket F', () => {
+    const labels = MOCK_CRESTMONT_FIELD.buckets!.map((b) => b.label);
+    expect(labels).toEqual(['Bucket A', 'Bucket B', 'Bucket C', 'Bucket D', 'Bucket E', 'Bucket F']);
   });
 
-  it('bucket labels are "Bucket A" through "Bucket F"', () => {
-    const labels = MOCK_GOLFER_BUCKETS.map((b) => b.label);
-    expect(labels).toEqual([
-      'Bucket A',
-      'Bucket B',
-      'Bucket C',
-      'Bucket D',
-      'Bucket E',
-      'Bucket F',
-    ]);
-  });
-
-  it('every golfer inside a bucket carries that bucket\'s bucketIndex', () => {
-    for (const bucket of MOCK_GOLFER_BUCKETS) {
-      for (const golfer of bucket.golfers) {
-        expect(golfer.bucketIndex).toBe(bucket.bucketIndex);
-      }
+  it('each bucket has exactly 4 players', () => {
+    for (const bucket of MOCK_CRESTMONT_FIELD.buckets!) {
+      expect(bucket.players).toHaveLength(4);
     }
   });
 
-  it('each golfer in every bucket has id, name, ranking, country', () => {
-    for (const bucket of MOCK_GOLFER_BUCKETS) {
-      for (const golfer of bucket.golfers) {
-        expect(typeof golfer.id).toBe('string');
-        expect(golfer.id).toBeTruthy();
-        expect(typeof golfer.name).toBe('string');
-        expect(golfer.name).toBeTruthy();
-        expect(typeof golfer.country).toBe('string');
-        expect(golfer.ranking === null || typeof golfer.ranking === 'number').toBe(true);
-      }
-    }
-  });
-
-  it('all golfer ids across all buckets are unique (no duplicates)', () => {
-    const allIds = MOCK_GOLFER_BUCKETS.flatMap((b) => b.golfers.map((g) => g.id));
+  it('all players across all buckets are unique (24 total)', () => {
+    const allIds = MOCK_CRESTMONT_FIELD.buckets!.flatMap((b) => b.players.map((p) => p.dg_id));
     expect(allIds).toHaveLength(24);
     expect(new Set(allIds).size).toBe(24);
   });
 
-  it('Bucket A contains g1–g4 (rankings 1–4)', () => {
-    const bucketA = MOCK_GOLFER_BUCKETS[0];
-    const ids = bucketA.golfers.map((g) => g.id);
-    expect(ids).toEqual(['g1', 'g2', 'g3', 'g4']);
-  });
-
-  it('Bucket F contains g21–g24 (rankings 21–24)', () => {
-    const bucketF = MOCK_GOLFER_BUCKETS[5];
-    const ids = bucketF.golfers.map((g) => g.id);
-    expect(ids).toEqual(['g21', 'g22', 'g23', 'g24']);
-  });
-
-  it('golfers in buckets collectively match MOCK_AVAILABLE_GOLFERS (excluding bucketIndex)', () => {
-    const bucketGolferIds = MOCK_GOLFER_BUCKETS.flatMap((b) => b.golfers.map((g) => g.id)).sort();
-    const availableIds = MOCK_AVAILABLE_GOLFERS.map((g) => g.id).sort();
-    expect(bucketGolferIds).toEqual(availableIds);
+  it('Bucket 1 contains the first 4 players (including Scottie Scheffler)', () => {
+    const bucket1 = MOCK_CRESTMONT_FIELD.buckets![0];
+    const names = bucket1.players.map((p) => p.player_name);
+    expect(names).toContain('Scottie Scheffler');
+    expect(names).toContain('Xander Schauffele');
+    expect(names).toContain('Rory McIlroy');
+    expect(names).toContain('Jon Rahm');
   });
 });
 
@@ -160,134 +225,122 @@ describe('MOCK_GOLFER_BUCKETS', () => {
 // ---------------------------------------------------------------------------
 
 describe('MOCK_RVCC_LEADERBOARD', () => {
-  it('has tournamentId "masters-2026-rvcc"', () => {
-    expect(MOCK_RVCC_LEADERBOARD.tournamentId).toBe('masters-2026-rvcc');
+  it('has pool_id matching MOCK_RVCC_POOL.id', () => {
+    expect(MOCK_RVCC_LEADERBOARD.pool_id).toBe(MOCK_RVCC_POOL.id);
   });
 
-  it('has clubCode "rvcc"', () => {
-    expect(MOCK_RVCC_LEADERBOARD.clubCode).toBe('rvcc');
+  it('has a non-empty last_scored_at timestamp', () => {
+    expect(MOCK_RVCC_LEADERBOARD.last_scored_at).toBeTruthy();
+    expect(() => new Date(MOCK_RVCC_LEADERBOARD.last_scored_at)).not.toThrow();
   });
 
-  it('has a non-empty tournamentName', () => {
-    expect(MOCK_RVCC_LEADERBOARD.tournamentName).toBeTruthy();
+  it('has 3 standings', () => {
+    expect(MOCK_RVCC_LEADERBOARD.standings).toHaveLength(3);
   });
 
-  it('has currentRound set to 2', () => {
-    expect(MOCK_RVCC_LEADERBOARD.currentRound).toBe(2);
+  it('count matches the number of standings', () => {
+    expect(MOCK_RVCC_LEADERBOARD.count).toBe(MOCK_RVCC_LEADERBOARD.standings.length);
   });
 
-  it('has a lastUpdated timestamp', () => {
-    expect(MOCK_RVCC_LEADERBOARD.lastUpdated).toBeTruthy();
-    expect(() => new Date(MOCK_RVCC_LEADERBOARD.lastUpdated)).not.toThrow();
-  });
-
-  it('has 3 entries', () => {
-    expect(MOCK_RVCC_LEADERBOARD.entries).toHaveLength(3);
-  });
-
-  it('each entry has 7 golfer cells', () => {
-    for (const entry of MOCK_RVCC_LEADERBOARD.entries) {
-      expect(entry.golfers).toHaveLength(7);
+  it('each standing has 7 picks', () => {
+    for (const standing of MOCK_RVCC_LEADERBOARD.standings) {
+      expect(standing.picks).toHaveLength(7);
     }
   });
 
-  it('qualified entries (isQualified=true) have a non-null totalScore', () => {
-    const qualified = MOCK_RVCC_LEADERBOARD.entries.filter((e) => e.isQualified);
-    for (const entry of qualified) {
-      expect(entry.totalScore).not.toBeNull();
-      expect(typeof entry.totalScore).toBe('number');
-    }
-  });
-
-  it('non-qualified entries have totalScore of null', () => {
-    const disqualified = MOCK_RVCC_LEADERBOARD.entries.filter((e) => !e.isQualified);
-    for (const entry of disqualified) {
-      expect(entry.totalScore).toBeNull();
-    }
-  });
-
-  it('qualified entries have a numeric position', () => {
-    const qualified = MOCK_RVCC_LEADERBOARD.entries.filter((e) => e.isQualified);
-    for (const entry of qualified) {
-      expect(typeof entry.position).toBe('number');
-    }
-  });
-
-  it('non-qualified entries have position of null', () => {
-    const disqualified = MOCK_RVCC_LEADERBOARD.entries.filter((e) => !e.isQualified);
-    for (const entry of disqualified) {
-      expect(entry.position).toBeNull();
-    }
-  });
-
-  it('displayPosition for non-qualified entries is "-"', () => {
-    const disqualified = MOCK_RVCC_LEADERBOARD.entries.filter((e) => !e.isQualified);
-    for (const entry of disqualified) {
-      expect(entry.displayPosition).toBe('-');
-    }
-  });
-
-  it('entries have unique entryIds', () => {
-    const ids = MOCK_RVCC_LEADERBOARD.entries.map((e) => e.entryId);
+  it('all entry_ids are unique', () => {
+    const ids = MOCK_RVCC_LEADERBOARD.standings.map((s) => s.entry_id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('first entry (position 1) has the lowest totalScore among qualified entries', () => {
-    const qualified = MOCK_RVCC_LEADERBOARD.entries.filter((e) => e.isQualified);
-    const scores = qualified.map((e) => e.totalScore as number);
+  it('qualified standings have a non-null aggregate_score', () => {
+    const qualified = MOCK_RVCC_LEADERBOARD.standings.filter(
+      (s) => s.qualification_status === 'qualified'
+    );
+    for (const standing of qualified) {
+      expect(standing.aggregate_score).not.toBeNull();
+      expect(typeof standing.aggregate_score).toBe('number');
+    }
+  });
+
+  it('not_qualified standings have null aggregate_score', () => {
+    const notQualified = MOCK_RVCC_LEADERBOARD.standings.filter(
+      (s) => s.qualification_status === 'not_qualified'
+    );
+    for (const standing of notQualified) {
+      expect(standing.aggregate_score).toBeNull();
+    }
+  });
+
+  it('qualified standings have a non-null rank', () => {
+    const qualified = MOCK_RVCC_LEADERBOARD.standings.filter(
+      (s) => s.qualification_status === 'qualified'
+    );
+    for (const standing of qualified) {
+      expect(standing.rank).not.toBeNull();
+      expect(typeof standing.rank).toBe('number');
+    }
+  });
+
+  it('first qualified standing has the lowest aggregate_score (is the leader)', () => {
+    const qualified = MOCK_RVCC_LEADERBOARD.standings.filter(
+      (s) => s.qualification_status === 'qualified'
+    );
+    const scores = qualified.map((s) => s.aggregate_score as number);
     expect(scores[0]).toBe(Math.min(...scores));
   });
 
-  it('golfer cells with status "cut" or "wd" have score of null', () => {
-    for (const entry of MOCK_RVCC_LEADERBOARD.entries) {
-      for (const cell of entry.golfers) {
-        if (cell.status === 'cut' || cell.status === 'wd') {
-          expect(cell.score).toBeNull();
+  it('picks with status "cut" or "wd" have null total_score', () => {
+    for (const standing of MOCK_RVCC_LEADERBOARD.standings) {
+      for (const pick of standing.picks) {
+        if (pick.status === 'cut' || pick.status === 'wd') {
+          expect(pick.total_score).toBeNull();
         }
       }
     }
   });
 
-  it('golfer cells with status "active" have a numeric score', () => {
-    for (const entry of MOCK_RVCC_LEADERBOARD.entries) {
-      for (const cell of entry.golfers) {
-        if (cell.status === 'active') {
-          expect(typeof cell.score).toBe('number');
+  it('picks with status "cut" or "wd" have made_cut false', () => {
+    for (const standing of MOCK_RVCC_LEADERBOARD.standings) {
+      for (const pick of standing.picks) {
+        if (pick.status === 'cut' || pick.status === 'wd') {
+          expect(pick.made_cut).toBe(false);
         }
       }
     }
   });
 
-  it('isCounted is false for cells with status "cut" or "wd"', () => {
-    for (const entry of MOCK_RVCC_LEADERBOARD.entries) {
-      for (const cell of entry.golfers) {
-        if (cell.status === 'cut' || cell.status === 'wd') {
-          expect(cell.isCounted).toBe(false);
+  it('picks with status "active" have a numeric total_score', () => {
+    for (const standing of MOCK_RVCC_LEADERBOARD.standings) {
+      for (const pick of standing.picks) {
+        if (pick.status === 'active') {
+          expect(typeof pick.total_score).toBe('number');
         }
       }
     }
   });
 
-  it('each entry has a non-empty qualificationNote', () => {
-    for (const entry of MOCK_RVCC_LEADERBOARD.entries) {
-      expect(typeof entry.qualificationNote).toBe('string');
-      expect(entry.qualificationNote.length).toBeGreaterThan(0);
-    }
-  });
-
-  it('countedCount is 0 for non-qualified entries', () => {
-    const disqualified = MOCK_RVCC_LEADERBOARD.entries.filter((e) => !e.isQualified);
-    for (const entry of disqualified) {
-      expect(entry.countedCount).toBe(0);
-    }
-  });
-
-  it('golfer cells have thru set to "-" when status is cut or wd', () => {
-    for (const entry of MOCK_RVCC_LEADERBOARD.entries) {
-      for (const cell of entry.golfers) {
-        if (cell.status === 'cut' || cell.status === 'wd') {
-          expect(cell.thru).toBe('-');
+  it('picks with counts_toward_total false have is_dropped or not made_cut', () => {
+    for (const standing of MOCK_RVCC_LEADERBOARD.standings) {
+      for (const pick of standing.picks) {
+        if (!pick.counts_toward_total) {
+          expect(pick.is_dropped || !pick.made_cut).toBe(true);
         }
+      }
+    }
+  });
+
+  it('each standing has qualification_status of "qualified" or "not_qualified" or "pending"', () => {
+    const validStatuses = ['qualified', 'not_qualified', 'pending'];
+    for (const standing of MOCK_RVCC_LEADERBOARD.standings) {
+      expect(validStatuses).toContain(standing.qualification_status);
+    }
+  });
+
+  it('RVCC picks do not have bucket_number', () => {
+    for (const standing of MOCK_RVCC_LEADERBOARD.standings) {
+      for (const pick of standing.picks) {
+        expect(pick.bucket_number).toBeUndefined();
       }
     }
   });
@@ -298,85 +351,65 @@ describe('MOCK_RVCC_LEADERBOARD', () => {
 // ---------------------------------------------------------------------------
 
 describe('MOCK_CRESTMONT_LEADERBOARD', () => {
-  it('has tournamentId "masters-2026-crestmont"', () => {
-    expect(MOCK_CRESTMONT_LEADERBOARD.tournamentId).toBe('masters-2026-crestmont');
+  it('has pool_id matching MOCK_CRESTMONT_POOL.id', () => {
+    expect(MOCK_CRESTMONT_LEADERBOARD.pool_id).toBe(MOCK_CRESTMONT_POOL.id);
   });
 
-  it('has clubCode "crestmont"', () => {
-    expect(MOCK_CRESTMONT_LEADERBOARD.clubCode).toBe('crestmont');
+  it('has a non-empty last_scored_at timestamp', () => {
+    expect(MOCK_CRESTMONT_LEADERBOARD.last_scored_at).toBeTruthy();
+    expect(() => new Date(MOCK_CRESTMONT_LEADERBOARD.last_scored_at)).not.toThrow();
   });
 
-  it('has currentRound set to 2', () => {
-    expect(MOCK_CRESTMONT_LEADERBOARD.currentRound).toBe(2);
+  it('has at least 1 standing', () => {
+    expect(MOCK_CRESTMONT_LEADERBOARD.standings.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('has a lastUpdated timestamp', () => {
-    expect(MOCK_CRESTMONT_LEADERBOARD.lastUpdated).toBeTruthy();
-    expect(() => new Date(MOCK_CRESTMONT_LEADERBOARD.lastUpdated)).not.toThrow();
+  it('count matches the number of standings', () => {
+    expect(MOCK_CRESTMONT_LEADERBOARD.count).toBe(MOCK_CRESTMONT_LEADERBOARD.standings.length);
   });
 
-  it('has at least 1 entry', () => {
-    expect(MOCK_CRESTMONT_LEADERBOARD.entries.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('each entry has exactly 6 golfer cells', () => {
-    for (const entry of MOCK_CRESTMONT_LEADERBOARD.entries) {
-      expect(entry.golfers).toHaveLength(6);
+  it('each standing has exactly 6 picks', () => {
+    for (const standing of MOCK_CRESTMONT_LEADERBOARD.standings) {
+      expect(standing.picks).toHaveLength(6);
     }
   });
 
-  it('golfer cells include a bucketLabel string', () => {
-    for (const entry of MOCK_CRESTMONT_LEADERBOARD.entries) {
-      for (const cell of entry.golfers) {
-        expect(typeof cell.bucketLabel).toBe('string');
-        expect((cell.bucketLabel as string).length).toBeGreaterThan(0);
+  it('each pick includes a bucket_number', () => {
+    for (const standing of MOCK_CRESTMONT_LEADERBOARD.standings) {
+      for (const pick of standing.picks) {
+        expect(typeof pick.bucket_number).toBe('number');
       }
     }
   });
 
-  it('qualified entries have non-null totalScore', () => {
-    const qualified = MOCK_CRESTMONT_LEADERBOARD.entries.filter((e) => e.isQualified);
-    for (const entry of qualified) {
-      expect(entry.totalScore).not.toBeNull();
-      expect(typeof entry.totalScore).toBe('number');
+  it('bucket_numbers in first standing are 1 through 6', () => {
+    const bucketNumbers = MOCK_CRESTMONT_LEADERBOARD.standings[0].picks.map((p) => p.bucket_number);
+    expect(bucketNumbers).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('qualified standings have non-null aggregate_score', () => {
+    const qualified = MOCK_CRESTMONT_LEADERBOARD.standings.filter(
+      (s) => s.qualification_status === 'qualified'
+    );
+    for (const standing of qualified) {
+      expect(standing.aggregate_score).not.toBeNull();
+      expect(typeof standing.aggregate_score).toBe('number');
     }
   });
 
-  it('non-qualified entries have totalScore of null', () => {
-    const disqualified = MOCK_CRESTMONT_LEADERBOARD.entries.filter((e) => !e.isQualified);
-    for (const entry of disqualified) {
-      expect(entry.totalScore).toBeNull();
-    }
+  it('first standing is Alice Johnson at rank 1 with aggregate_score -12', () => {
+    const first = MOCK_CRESTMONT_LEADERBOARD.standings[0];
+    expect(first.entry_name).toBe('Alice Johnson');
+    expect(first.rank).toBe(1);
+    expect(first.aggregate_score).toBe(-12);
   });
 
-  it('first entry is "Alice Johnson" at position 1 with totalScore -12', () => {
-    const first = MOCK_CRESTMONT_LEADERBOARD.entries[0];
-    expect(first.entryName).toBe('Alice Johnson');
-    expect(first.position).toBe(1);
-    expect(first.totalScore).toBe(-12);
-    expect(first.displayTotal).toBe('-12');
-  });
-
-  it('bucketLabels in first entry are Bucket A through Bucket F', () => {
-    const labels = MOCK_CRESTMONT_LEADERBOARD.entries[0].golfers.map((c) => c.bucketLabel);
-    expect(labels).toEqual([
-      'Bucket A',
-      'Bucket B',
-      'Bucket C',
-      'Bucket D',
-      'Bucket E',
-      'Bucket F',
-    ]);
-  });
-
-  it('golfer cells with status "cut" have score null and isCounted false', () => {
-    for (const entry of MOCK_CRESTMONT_LEADERBOARD.entries) {
-      for (const cell of entry.golfers) {
-        if (cell.status === 'cut') {
-          expect(cell.score).toBeNull();
-          expect(cell.isCounted).toBe(false);
-          expect(cell.displayScore).toBe('CUT');
-          expect(cell.thru).toBe('-');
+  it('picks with status "cut" have null total_score and counts_toward_total false', () => {
+    for (const standing of MOCK_CRESTMONT_LEADERBOARD.standings) {
+      for (const pick of standing.picks) {
+        if (pick.status === 'cut') {
+          expect(pick.total_score).toBeNull();
+          expect(pick.counts_toward_total).toBe(false);
         }
       }
     }
@@ -384,56 +417,35 @@ describe('MOCK_CRESTMONT_LEADERBOARD', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tournament Summaries – clubCode consistency
+// Cross-pool consistency
 // ---------------------------------------------------------------------------
 
-describe('Tournament summaries have correct clubCode', () => {
-  it('MOCK_RVCC_TOURNAMENT_SUMMARY.clubCode is "rvcc"', () => {
-    expect(MOCK_RVCC_TOURNAMENT_SUMMARY.clubCode).toBe('rvcc');
+describe('Cross-pool consistency', () => {
+  it('RVCC and Crestmont pools share the same tournament_id', () => {
+    expect(MOCK_RVCC_POOL.tournament_id).toBe(MOCK_CRESTMONT_POOL.tournament_id);
   });
 
-  it('MOCK_CRESTMONT_TOURNAMENT_SUMMARY.clubCode is "crestmont"', () => {
-    expect(MOCK_CRESTMONT_TOURNAMENT_SUMMARY.clubCode).toBe('crestmont');
+  it('RVCC and Crestmont pools have different ids', () => {
+    expect(MOCK_RVCC_POOL.id).not.toBe(MOCK_CRESTMONT_POOL.id);
   });
 
-  it('MOCK_RVCC_TOURNAMENT_DETAIL.clubCode is "rvcc"', () => {
-    expect(MOCK_RVCC_TOURNAMENT_DETAIL.clubCode).toBe('rvcc');
+  it('RVCC leaderboard pool_id matches RVCC pool id', () => {
+    expect(MOCK_RVCC_LEADERBOARD.pool_id).toBe(MOCK_RVCC_POOL.id);
   });
 
-  it('MOCK_CRESTMONT_TOURNAMENT_DETAIL.clubCode is "crestmont"', () => {
-    expect(MOCK_CRESTMONT_TOURNAMENT_DETAIL.clubCode).toBe('crestmont');
+  it('Crestmont leaderboard pool_id matches Crestmont pool id', () => {
+    expect(MOCK_CRESTMONT_LEADERBOARD.pool_id).toBe(MOCK_CRESTMONT_POOL.id);
   });
 
-  it('RVCC leaderboard clubCode matches RVCC summary', () => {
-    expect(MOCK_RVCC_LEADERBOARD.clubCode).toBe(MOCK_RVCC_TOURNAMENT_SUMMARY.clubCode);
+  it('RVCC field pool_id matches RVCC pool id', () => {
+    expect(MOCK_RVCC_FIELD.pool_id).toBe(MOCK_RVCC_POOL.id);
   });
 
-  it('Crestmont leaderboard clubCode matches Crestmont summary', () => {
-    expect(MOCK_CRESTMONT_LEADERBOARD.clubCode).toBe(MOCK_CRESTMONT_TOURNAMENT_SUMMARY.clubCode);
+  it('Crestmont field pool_id matches Crestmont pool id', () => {
+    expect(MOCK_CRESTMONT_FIELD.pool_id).toBe(MOCK_CRESTMONT_POOL.id);
   });
 
-  it('RVCC detail tournamentId matches RVCC leaderboard tournamentId', () => {
-    expect(MOCK_RVCC_TOURNAMENT_DETAIL.id).toBe(MOCK_RVCC_LEADERBOARD.tournamentId);
-  });
-
-  it('Crestmont detail tournamentId matches Crestmont leaderboard tournamentId', () => {
-    expect(MOCK_CRESTMONT_TOURNAMENT_DETAIL.id).toBe(MOCK_CRESTMONT_LEADERBOARD.tournamentId);
-  });
-
-  it('both summaries share the same startDate and endDate (same tournament week)', () => {
-    expect(MOCK_RVCC_TOURNAMENT_SUMMARY.startDate).toBe(MOCK_CRESTMONT_TOURNAMENT_SUMMARY.startDate);
-    expect(MOCK_RVCC_TOURNAMENT_SUMMARY.endDate).toBe(MOCK_CRESTMONT_TOURNAMENT_SUMMARY.endDate);
-  });
-
-  it('both summaries have status "active"', () => {
-    expect(MOCK_RVCC_TOURNAMENT_SUMMARY.status).toBe('active');
-    expect(MOCK_CRESTMONT_TOURNAMENT_SUMMARY.status).toBe('active');
-  });
-
-  it('details inherit all fields from their corresponding summaries', () => {
-    // RVCC
-    expect(MOCK_RVCC_TOURNAMENT_DETAIL).toMatchObject(MOCK_RVCC_TOURNAMENT_SUMMARY);
-    // Crestmont
-    expect(MOCK_CRESTMONT_TOURNAMENT_DETAIL).toMatchObject(MOCK_CRESTMONT_TOURNAMENT_SUMMARY);
+  it('both leaderboards share the same last_scored_at', () => {
+    expect(MOCK_RVCC_LEADERBOARD.last_scored_at).toBe(MOCK_CRESTMONT_LEADERBOARD.last_scored_at);
   });
 });

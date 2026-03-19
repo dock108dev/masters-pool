@@ -25,13 +25,16 @@ export function ConfirmationPage({ clubConfig }: ConfirmationPageProps) {
       <div className="confirmation-details">
         <p><strong>Confirmation Code:</strong> {confirmation.confirmationCode}</p>
         <p><strong>Email:</strong> {confirmation.email}</p>
-        <p><strong>Display Name:</strong> {confirmation.displayName}</p>
+        <p><strong>Entry Name:</strong> {confirmation.entry_name}</p>
         <p><strong>Submitted:</strong> {new Date(confirmation.submittedAt).toLocaleString()}</p>
         <div className="confirmation-golfers">
           <h3>Your Picks:</h3>
           <ol>
-            {confirmation.golferNames.map((name, i) => (
-              <li key={i}>{name}</li>
+            {confirmation.picks.map((pick, i) => (
+              <li key={i}>
+                Pick {pick.pick_slot}: dg_id {pick.dg_id}
+                {pick.bucket_number != null ? ` (Bucket ${pick.bucket_number})` : ''}
+              </li>
             ))}
           </ol>
         </div>

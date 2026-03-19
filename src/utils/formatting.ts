@@ -25,6 +25,12 @@ export function formatPosition(position: number | null): string {
   return `${position}`;
 }
 
+export function formatThru(thru: number | null): string {
+  if (thru === null) return '-';
+  if (thru === 18) return 'F';
+  return `${thru}`;
+}
+
 export function formatLastUpdated(isoString: string): string {
   const date = new Date(isoString);
   return date.toLocaleString('en-US', {
@@ -36,9 +42,14 @@ export function formatLastUpdated(isoString: string): string {
   });
 }
 
-export function formatGolferCell(golferName: string, displayScore: string, thru: string, status: GolferStatus): string {
+export function formatGolferCell(
+  golferName: string,
+  score: number | null,
+  thru: number | null,
+  status: GolferStatus
+): string {
   if (status === 'cut') return `${golferName} (CUT)`;
   if (status === 'wd') return `${golferName} (WD)`;
   if (status === 'dq') return `${golferName} (DQ)`;
-  return `${golferName} (${displayScore} / ${thru})`;
+  return `${golferName} (${formatScore(score)} / ${formatThru(thru)})`;
 }

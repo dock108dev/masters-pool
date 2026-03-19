@@ -35,9 +35,8 @@ describe('RulesPage', () => {
       expect(screen.getByText(/Maximum 3 entries per email/)).toBeInTheDocument();
     });
 
-    it('shows upload info when enabled', () => {
-      // RVCC has uploadEnabled: true, uploadRequired: false
-      expect(screen.getByText(/File upload is optional/)).toBeInTheDocument();
+    it('does not show file upload info (upload is admin-only)', () => {
+      expect(screen.queryByText(/File upload/)).not.toBeInTheDocument();
     });
   });
 
@@ -70,8 +69,7 @@ describe('RulesPage', () => {
       expect(screen.getByText(/Maximum 2 entries per email/)).toBeInTheDocument();
     });
 
-    it('does not show upload info when disabled', () => {
-      // Crestmont has uploadEnabled: false
+    it('does not show file upload info (upload is admin-only)', () => {
       expect(screen.queryByText(/File upload/)).not.toBeInTheDocument();
     });
   });

@@ -2,6 +2,10 @@ export type ClubCode = 'rvcc' | 'crestmont';
 
 export type GolferStatus = 'active' | 'cut' | 'wd' | 'dq';
 
+export type PoolStatus = 'draft' | 'open' | 'locked' | 'live' | 'final' | 'archived';
+
+export type QualificationStatus = 'qualified' | 'pending' | 'not_qualified';
+
 export interface ClubConfig {
   code: ClubCode;
   name: string;
@@ -12,104 +16,137 @@ export interface ClubConfig {
   useBuckets: boolean;
   bucketLabels?: string[];
   maxEntriesPerEmail?: number;
-  uploadEnabled: boolean;
-  uploadRequired: boolean;
+  // uploadEnabled/uploadRequired removed — file upload is admin-only
   rulesDescription: string[];
 }
 
-export interface TournamentSummary {
-  id: string;
-  name: string;
-  year: number;
-  clubCode: ClubCode;
-  status: 'upcoming' | 'active' | 'completed';
-  startDate: string;
-  endDate: string;
+// Rules from the backend pool's rules_json field
+export interface PoolRules {
+  variant: string;
+  pick_count: number;
+  count_best: number;
+  min_cuts_to_qualify: number;
+  uses_buckets: boolean;
 }
 
-export interface TournamentDetail extends TournamentSummary {
-  courseName: string;
-  rounds: number;
-  currentRound: number | null;
-  entriesCount: number;
-  entryDeadline: string;
+// Matches the real backend pool list/detail response
+export interface PoolSummary {
+  id: number;
+  code: string;
+  name: string;
+  club_code: ClubCode;
+  tournament_id: number;
+  status: PoolStatus;
+  entry_deadline: string;
+  max_entries_per_email: number;
+  scoring_enabled: boolean;
+  rules_json: PoolRules;
+}
+
+// Field endpoint types
+export interface FieldPlayer {
+  dg_id: number;
+  player_name: string;
+}
+
+export interface FieldBucket {
+  bucket_number: number; // 1-indexed
+  label: string;
+  players: FieldPlayer[];
+}
+
+export interface PoolFieldResponse {
+  pool_id: number;
+  variant: string;
+  players?: FieldPlayer[];   // present for RVCC (flat)
+  buckets?: FieldBucket[];   // present for Crestmont (bucketed)
+}
+
+// Kept for UI pickers — adapts FieldPlayer/FieldBucket to a shared shape
+export interface AvailableGolfer {
+  dg_id: number;
+  player_name: string;
+  ranking?: number | null;
+  country?: string;
 }
 
 export interface GolferBucket {
-  bucketIndex: number;
+  bucket_number: number; // 1-indexed
   label: string;
   golfers: AvailableGolfer[];
 }
 
-export interface AvailableGolfer {
-  id: string;
-  name: string;
-  ranking: number | null;
-  country: string;
-  bucketIndex?: number;
+// Entry submission
+export interface EntryPick {
+  dg_id: number;
+  pick_slot: number;
+  bucket_number?: number;
 }
 
 export interface EntrySubmissionRequest {
-  clubCode: ClubCode;
-  tournamentId: string;
   email: string;
-  displayName: string;
-  golferIds: string[];
-  uploadFile?: File;
+  entry_name: string;
+  picks: EntryPick[];
 }
 
 export interface EntrySubmissionResponse {
-  entryId: string;
+  entry_id: number;
   confirmationCode: string;
   email: string;
-  displayName: string;
-  golferNames: string[];
+  entry_name: string;
+  picks: EntryPick[];
   submittedAt: string;
 }
 
-export interface LeaderboardGolferCell {
-  golferId: string;
-  golferName: string;
-  score: number | null;
-  displayScore: string;
-  thru: string;
+// Leaderboard
+export interface LeaderboardPick {
+  dg_id: number;
+  player_name: string;
+  total_score: number | null;
+  position: number | null;
+  thru: number | null;
+  r1: number | null;
+  r2: number | null;
+  r3: number | null;
+  r4: number | null;
   status: GolferStatus;
-  isCounted: boolean;
-  bucketLabel?: string;
+  made_cut: boolean;
+  counts_toward_total: boolean;
+  is_dropped: boolean;
+  bucket_number?: number;
 }
 
-export interface LeaderboardEntry {
-  entryId: string;
-  position: number | null;
-  displayPosition: string;
-  entryName: string;
+export interface LeaderboardStanding {
+  rank: number | null;
+  is_tied: boolean;
+  entry_id: number;
+  entry_name: string;
   email: string;
-  totalScore: number | null;
-  displayTotal: string;
-  isQualified: boolean;
-  qualificationNote: string;
-  countedCount: number;
-  golfers: LeaderboardGolferCell[];
+  aggregate_score: number | null;
+  qualification_status: QualificationStatus;
+  qualified_golfers_count: number;
+  counted_golfers_count: number;
+  is_complete: boolean;
+  picks: LeaderboardPick[];
 }
 
 export interface LeaderboardData {
-  tournamentId: string;
-  tournamentName: string;
-  clubCode: ClubCode;
-  currentRound: number | null;
-  lastUpdated: string;
-  entries: LeaderboardEntry[];
+  pool_id: number;
+  last_scored_at: string;
+  standings: LeaderboardStanding[];
+  count: number;
+}
+
+// Entry lookup
+export interface EntryLookupEntry {
+  entry_id: number;
+  entry_name: string;
+  picks: EntryPick[];
+  submittedAt: string;
+  confirmationCode: string;
 }
 
 export interface EntryLookupResult {
   email: string;
   entries: EntryLookupEntry[];
-}
-
-export interface EntryLookupEntry {
-  entryId: string;
-  displayName: string;
-  golferNames: string[];
-  submittedAt: string;
-  confirmationCode: string;
 }

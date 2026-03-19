@@ -10,17 +10,17 @@ interface LeaderboardPageProps {
 }
 
 export function LeaderboardPage({ clubConfig }: LeaderboardPageProps) {
-  const { data: tournament, loading: tournLoading } = useApi(
-    () => apiClient.getActiveTournament(clubConfig.code),
+  const { data: pool, loading: poolLoading } = useApi(
+    () => apiClient.getActivePool(clubConfig.code),
     [clubConfig.code]
   );
 
   const { data: leaderboard, loading: lbLoading, error, refetch } = useApi(
-    () => tournament ? apiClient.getLeaderboard(tournament.id) : Promise.reject(new Error('No tournament')),
-    [tournament?.id ?? '']
+    () => pool ? apiClient.getLeaderboard(pool.id) : Promise.reject(new Error('No pool')),
+    [pool?.id ?? 0]
   );
 
-  if (tournLoading || lbLoading) return <LoadingState message="Loading leaderboard..." />;
+  if (poolLoading || lbLoading) return <LoadingState message="Loading leaderboard..." />;
   if (error) return <ErrorState message={error} onRetry={refetch} />;
   if (!leaderboard) return <ErrorState message="Leaderboard unavailable." />;
 

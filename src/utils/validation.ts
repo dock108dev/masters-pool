@@ -26,79 +26,66 @@ export function validateDisplayName(name: string): ValidationResult {
 }
 
 export function validateRvccPicks(
-  selectedGolferIds: string[],
+  selectedDgIds: number[],
   config: ClubConfig
 ): ValidationResult {
   const errors: string[] = [];
-  if (selectedGolferIds.length !== config.pickCount) {
-    errors.push(`You must select exactly ${config.pickCount} golfers. Currently selected: ${selectedGolferIds.length}.`);
+  if (selectedDgIds.length !== config.pickCount) {
+    errors.push(`You must select exactly ${config.pickCount} golfers. Currently selected: ${selectedDgIds.length}.`);
   }
-  const unique = new Set(selectedGolferIds);
-  if (unique.size !== selectedGolferIds.length) {
+  const unique = new Set(selectedDgIds);
+  if (unique.size !== selectedDgIds.length) {
     errors.push('Duplicate golfer selections are not allowed.');
   }
   return { valid: errors.length === 0, errors };
 }
 
 export function validateCrestmontPicks(
-  selectedGolferIds: string[],
+  selectedDgIds: number[],
   buckets: GolferBucket[],
   config: ClubConfig
 ): ValidationResult {
   const errors: string[] = [];
 
-  if (selectedGolferIds.length !== config.pickCount) {
-    errors.push(`You must select exactly ${config.pickCount} golfers (1 from each bucket). Currently selected: ${selectedGolferIds.length}.`);
+  if (selectedDgIds.length !== config.pickCount) {
+    errors.push(`You must select exactly ${config.pickCount} golfers (1 from each bucket). Currently selected: ${selectedDgIds.length}.`);
   }
 
-  const golferBucketMap = new Map<string, number>();
+  // Map dg_id → bucket_number
+  const golferBucketMap = new Map<number, number>();
   for (const bucket of buckets) {
     for (const g of bucket.golfers) {
-      golferBucketMap.set(g.id, bucket.bucketIndex);
+      golferBucketMap.set(g.dg_id, bucket.bucket_number);
     }
   }
 
   const bucketsUsed = new Set<number>();
-  for (const id of selectedGolferIds) {
-    const bucketIndex = golferBucketMap.get(id);
-    if (bucketIndex === undefined) {
-      errors.push(`Golfer ID "${id}" not found in any bucket.`);
-    } else if (bucketsUsed.has(bucketIndex)) {
-      errors.push(`Only 1 golfer may be selected from ${buckets[bucketIndex]?.label ?? `Bucket ${bucketIndex}`}.`);
+  for (const dgId of selectedDgIds) {
+    const bucketNumber = golferBucketMap.get(dgId);
+    if (bucketNumber === undefined) {
+      errors.push(`Golfer with dg_id ${dgId} not found in any bucket.`);
+    } else if (bucketsUsed.has(bucketNumber)) {
+      const bucket = buckets.find((b) => b.bucket_number === bucketNumber);
+      errors.push(`Only 1 golfer may be selected from ${bucket?.label ?? `Bucket ${bucketNumber}`}.`);
     } else {
-      bucketsUsed.add(bucketIndex);
+      bucketsUsed.add(bucketNumber);
     }
   }
 
-  const unique = new Set(selectedGolferIds);
-  if (unique.size !== selectedGolferIds.length) {
+  const unique = new Set(selectedDgIds);
+  if (unique.size !== selectedDgIds.length) {
     errors.push('Duplicate golfer selections are not allowed.');
   }
 
   return { valid: errors.length === 0, errors };
 }
 
-export function validateUpload(
-  file: File | undefined,
-  config: ClubConfig
-): ValidationResult {
-  const errors: string[] = [];
-  if (config.uploadRequired && !file) {
-    errors.push('File upload is required.');
-  }
-  if (file && file.size > 10 * 1024 * 1024) {
-    errors.push('File must be under 10MB.');
-  }
-  return { valid: errors.length === 0, errors };
-}
-
 export function validateEntryForm(
   email: string,
   displayName: string,
-  selectedGolferIds: string[],
+  selectedDgIds: number[],
   config: ClubConfig,
   buckets: GolferBucket[] | null,
-  uploadFile: File | undefined
 ): ValidationResult {
   const allErrors: string[] = [];
 
@@ -109,56 +96,51 @@ export function validateEntryForm(
   allErrors.push(...nameResult.errors);
 
   if (config.useBuckets && buckets) {
-    const picksResult = validateCrestmontPicks(selectedGolferIds, buckets, config);
+    const picksResult = validateCrestmontPicks(selectedDgIds, buckets, config);
     allErrors.push(...picksResult.errors);
   } else {
-    const picksResult = validateRvccPicks(selectedGolferIds, config);
+    const picksResult = validateRvccPicks(selectedDgIds, config);
     allErrors.push(...picksResult.errors);
-  }
-
-  if (config.uploadEnabled) {
-    const uploadResult = validateUpload(uploadFile, config);
-    allErrors.push(...uploadResult.errors);
   }
 
   return { valid: allErrors.length === 0, errors: allErrors };
 }
 
 export function canAddGolfer(
-  golferId: string,
-  selectedGolferIds: string[],
+  dgId: number,
+  selectedDgIds: number[],
   _availableGolfers: AvailableGolfer[],
   config: ClubConfig,
   buckets: GolferBucket[] | null,
-  golferBucketIndex?: number
+  golferBucketNumber?: number
 ): { allowed: boolean; reason?: string } {
-  if (selectedGolferIds.includes(golferId)) {
+  if (selectedDgIds.includes(dgId)) {
     return { allowed: false, reason: 'Already selected.' };
   }
 
   if (!config.useBuckets) {
-    if (selectedGolferIds.length >= config.pickCount) {
+    if (selectedDgIds.length >= config.pickCount) {
       return { allowed: false, reason: `Maximum of ${config.pickCount} golfers already selected.` };
     }
     return { allowed: true };
   }
 
-  if (buckets && golferBucketIndex !== undefined) {
-    const golferBucketMap = new Map<string, number>();
+  if (buckets && golferBucketNumber !== undefined) {
+    const golferBucketMap = new Map<number, number>();
     for (const bucket of buckets) {
       for (const g of bucket.golfers) {
-        golferBucketMap.set(g.id, bucket.bucketIndex);
+        golferBucketMap.set(g.dg_id, bucket.bucket_number);
       }
     }
-    const alreadyPickedFromBucket = selectedGolferIds.some(
-      (id) => golferBucketMap.get(id) === golferBucketIndex
+    const alreadyPickedFromBucket = selectedDgIds.some(
+      (id) => golferBucketMap.get(id) === golferBucketNumber
     );
     if (alreadyPickedFromBucket) {
-      return { allowed: false, reason: `Already selected a golfer from this bucket.` };
+      return { allowed: false, reason: 'Already selected a golfer from this bucket.' };
     }
   }
 
-  if (selectedGolferIds.length >= config.pickCount) {
+  if (selectedDgIds.length >= config.pickCount) {
     return { allowed: false, reason: `Maximum of ${config.pickCount} golfers already selected.` };
   }
 

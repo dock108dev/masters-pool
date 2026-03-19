@@ -25,7 +25,7 @@ function renderHomePage(clubConfig = rvccConfig, path = '/rvcc') {
 describe('HomePage', () => {
   it('renders loading state initially', () => {
     renderHomePage();
-    expect(screen.getByText('Loading tournament...')).toBeInTheDocument();
+    expect(screen.getByText('Loading pool...')).toBeInTheDocument();
   });
 
   it('renders RVCC club name in heading', async () => {
@@ -38,38 +38,21 @@ describe('HomePage', () => {
     expect(await screen.findByRole('heading', { name: /Crestmont Masters Pool/i })).toBeInTheDocument();
   });
 
-  it('shows tournament name after loading', async () => {
+  it('shows pool name after loading', async () => {
     renderHomePage();
-    // MOCK_RVCC_TOURNAMENT_DETAIL name
+    // MOCK_RVCC_POOL name
     expect(await screen.findByText(/The Masters 2026 - RVCC Pool/i)).toBeInTheDocument();
   });
 
-  it('shows course name after loading', async () => {
+  it('shows pool status after loading', async () => {
     renderHomePage();
-    expect(await screen.findByText('Augusta National Golf Club')).toBeInTheDocument();
+    expect(await screen.findByText(/Status:\s*live/i)).toBeInTheDocument();
   });
 
-  it('shows tournament dates after loading', async () => {
+  it('shows entry deadline after loading', async () => {
     renderHomePage();
-    expect(await screen.findByText(/2026-04-09/)).toBeInTheDocument();
-    expect(screen.getByText(/2026-04-12/)).toBeInTheDocument();
-  });
-
-  it('shows tournament status after loading', async () => {
-    renderHomePage();
-    expect(await screen.findByText(/Status:\s*active/i)).toBeInTheDocument();
-  });
-
-  it('shows current round info when tournament is active', async () => {
-    renderHomePage();
-    // MOCK_RVCC_TOURNAMENT_DETAIL: currentRound=2, rounds=4
-    expect(await screen.findByText(/Round 2 of 4/i)).toBeInTheDocument();
-  });
-
-  it('shows entries count after loading', async () => {
-    renderHomePage();
-    // MOCK_RVCC_TOURNAMENT_DETAIL: entriesCount=48
-    expect(await screen.findByText(/48 entries submitted/i)).toBeInTheDocument();
+    // entry_deadline: '2026-04-09T07:00:00Z' — rendered via toLocaleString
+    expect(await screen.findByText(/Entry deadline:/i)).toBeInTheDocument();
   });
 
   it('renders Submit Entry link after loading', async () => {
@@ -87,9 +70,8 @@ describe('HomePage', () => {
     expect(await screen.findByRole('link', { name: /How It Works/i })).toBeInTheDocument();
   });
 
-  it('shows Crestmont tournament info after loading', async () => {
+  it('shows Crestmont pool name after loading', async () => {
     renderHomePage(crestmontConfig, '/crestmont');
     expect(await screen.findByText(/The Masters 2026 - Crestmont Pool/i)).toBeInTheDocument();
-    expect(screen.getByText(/36 entries submitted/i)).toBeInTheDocument();
   });
 });

@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ClubConfig, AvailableGolfer, GolferBucket, EntrySubmissionResponse } from '../types/domain';
+import type {
+  ClubConfig,
+  AvailableGolfer,
+  GolferBucket,
+  EntrySubmissionResponse,
+  PoolFieldResponse,
+} from '../types/domain';
 import { useApi } from '../hooks/useApi';
 import { apiClient } from '../api/client';
 import { validateEntryForm } from '../utils/validation';
 import { GolferPicker } from '../components/entry/GolferPicker';
 import { BucketPicker } from '../components/entry/BucketPicker';
-import { FileUpload } from '../components/entry/FileUpload';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 
@@ -14,41 +19,51 @@ interface EntryPageProps {
   clubConfig: ClubConfig;
 }
 
+function fieldToGolfers(field: PoolFieldResponse): AvailableGolfer[] {
+  if (field.players) return field.players;
+  if (field.buckets) return field.buckets.flatMap((b) => b.players);
+  return [];
+}
+
+function fieldToBuckets(field: PoolFieldResponse): GolferBucket[] | null {
+  if (!field.buckets) return null;
+  return field.buckets.map((b) => ({
+    bucket_number: b.bucket_number,
+    label: b.label,
+    golfers: b.players,
+  }));
+}
+
 export function EntryPage({ clubConfig }: EntryPageProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [uploadFile, setUploadFile] = useState<File | undefined>();
+  const [entryName, setEntryName] = useState('');
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { data: tournament, loading: tournLoading } = useApi(
-    async () => {
-      const summary = await apiClient.getActiveTournament(clubConfig.code);
-      return summary;
-    },
+  const { data: pool, loading: poolLoading } = useApi(
+    () => apiClient.getActivePool(clubConfig.code),
     [clubConfig.code]
   );
 
-  const { data: golfers, loading: golfersLoading, error: golfersError, refetch: refetchGolfers } = useApi<AvailableGolfer[]>(
-    () => tournament ? apiClient.getAvailableGolfers(tournament.id) : Promise.resolve([]),
-    [tournament?.id ?? '']
-  );
+  const { data: field, loading: fieldLoading, error: fieldError, refetch: refetchField } =
+    useApi<PoolFieldResponse>(
+      () => pool ? apiClient.getPoolField(pool.id) : Promise.resolve({ pool_id: 0, variant: '' }),
+      [pool?.id ?? 0]
+    );
 
-  const { data: buckets } = useApi<GolferBucket[]>(
-    () => (tournament && clubConfig.useBuckets) ? apiClient.getGolferBuckets(tournament.id) : Promise.resolve([]),
-    [tournament?.id ?? '', clubConfig.useBuckets]
-  );
+  const golfers: AvailableGolfer[] = field ? fieldToGolfers(field) : [];
+  const buckets: GolferBucket[] | null = field ? fieldToBuckets(field) : null;
 
-  const handleSelect = (golferId: string) => {
-    setSelectedIds((prev) => [...prev, golferId]);
+  const handleSelect = (dgId: number) => {
+    setSelectedIds((prev) => [...prev, dgId]);
     setValidationErrors([]);
   };
 
-  const handleDeselect = (golferId: string) => {
-    setSelectedIds((prev) => prev.filter((id) => id !== golferId));
+  const handleDeselect = (dgId: number) => {
+    setSelectedIds((prev) => prev.filter((id) => id !== dgId));
     setValidationErrors([]);
   };
 
@@ -58,11 +73,10 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
 
     const result = validateEntryForm(
       email,
-      displayName,
+      entryName,
       selectedIds,
       clubConfig,
       clubConfig.useBuckets ? (buckets ?? []) : null,
-      uploadFile
     );
 
     if (!result.valid) {
@@ -72,13 +86,20 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
 
     setSubmitting(true);
     try {
-      const response: EntrySubmissionResponse = await apiClient.submitEntry({
-        clubCode: clubConfig.code,
-        tournamentId: tournament!.id,
+      // Build picks array with pick_slot (1-indexed) and optional bucket_number
+      const picks = selectedIds.map((dgId, index) => {
+        const pick_slot = index + 1;
+        if (buckets) {
+          const bucket = buckets.find((b) => b.golfers.some((g) => g.dg_id === dgId));
+          return { dg_id: dgId, pick_slot, bucket_number: bucket?.bucket_number };
+        }
+        return { dg_id: dgId, pick_slot };
+      });
+
+      const response: EntrySubmissionResponse = await apiClient.submitEntry(pool!.id, {
         email,
-        displayName,
-        golferIds: selectedIds,
-        uploadFile,
+        entry_name: entryName,
+        picks,
       });
 
       navigate(`/${clubConfig.code}/confirmation`, { state: { confirmation: response } });
@@ -89,9 +110,9 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
     }
   };
 
-  if (tournLoading || golfersLoading) return <LoadingState message="Loading entry form..." />;
-  if (golfersError) return <ErrorState message={golfersError} onRetry={refetchGolfers} />;
-  if (!tournament) return <ErrorState message="No active tournament found." />;
+  if (poolLoading || fieldLoading) return <LoadingState message="Loading entry form..." />;
+  if (fieldError) return <ErrorState message={fieldError} onRetry={refetchField} />;
+  if (!pool) return <ErrorState message="No active pool found." />;
 
   return (
     <div className="page entry-page">
@@ -113,12 +134,12 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="displayName">Display Name</label>
+          <label htmlFor="entryName">Entry Name</label>
           <input
-            id="displayName"
+            id="entryName"
             type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
+            value={entryName}
+            onChange={(e) => setEntryName(e.target.value)}
             placeholder="Your name"
             required
             data-testid="display-name-input"
@@ -134,7 +155,7 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
             onDeselect={handleDeselect}
           />
         ) : (
-          golfers && (
+          golfers.length > 0 && (
             <GolferPicker
               golfers={golfers}
               selectedIds={selectedIds}
@@ -145,12 +166,6 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
             />
           )
         )}
-
-        <FileUpload
-          clubConfig={clubConfig}
-          selectedFile={uploadFile}
-          onFileSelect={setUploadFile}
-        />
 
         {validationErrors.length > 0 && (
           <div className="validation-errors" role="alert" data-testid="validation-errors">
