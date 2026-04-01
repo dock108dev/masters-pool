@@ -60,14 +60,15 @@ describe('HomePage', () => {
     expect(await screen.findByRole('link', { name: /Submit Entry/i })).toBeInTheDocument();
   });
 
-  it('renders View Leaderboard link after loading', async () => {
+  it('renders My Entries link after loading', async () => {
     renderHomePage();
-    expect(await screen.findByRole('link', { name: /View Leaderboard/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /My Entries/i })).toBeInTheDocument();
   });
 
-  it('renders How It Works link after loading', async () => {
+  it('renders rules section on home page', async () => {
     renderHomePage();
-    expect(await screen.findByRole('link', { name: /How It Works/i })).toBeInTheDocument();
+    expect(await screen.findByText(/Pool Rules/i)).toBeInTheDocument();
+    expect(screen.getByText(/Key Details/i)).toBeInTheDocument();
   });
 
   it('shows Crestmont pool name after loading', async () => {

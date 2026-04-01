@@ -277,6 +277,15 @@ body {
   flex-wrap: wrap;
 }
 
+.home-rules {
+  margin-top: 36px;
+}
+
+.home-rules h2 {
+  color: var(--color-green);
+  margin-bottom: 16px;
+}
+
 /* ================================================================
    Rules Page
    ================================================================ */
@@ -466,6 +475,71 @@ body {
 .bucket-selected-name {
   color: var(--color-text-secondary);
   font-weight: 500;
+}
+
+/* Other Player Write-in */
+
+.other-player-section {
+  margin-top: 28px;
+  padding: 20px;
+  background: var(--color-white);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+.other-player-section h4 {
+  color: var(--color-green);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.other-player-section .picker-instruction {
+  background: none;
+  padding: 0;
+  margin-bottom: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.other-player-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.other-player-input {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.other-player-input input {
+  flex: 1;
+  max-width: 360px;
+  padding: 12px 14px;
+  border: 2px solid var(--color-green);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-green-light);
+  min-height: 48px;
+}
+
+.other-player-input input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.other-player-input input:focus {
+  outline: none;
+  border-color: var(--color-green-dark);
+  box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.15);
+}
+
+.other-player-input .btn {
+  white-space: nowrap;
 }
 
 /* ================================================================
@@ -913,6 +987,15 @@ body {
   .form-group input[type='text'] {
     max-width: 100%;
     font-size: 16px; /* prevents iOS zoom on focus */
+  }
+
+  .other-player-input {
+    flex-direction: column;
+  }
+
+  .other-player-input input {
+    max-width: 100%;
+    font-size: 16px;
   }
 
   .btn {

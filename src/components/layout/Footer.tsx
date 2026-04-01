@@ -7,7 +7,7 @@ interface FooterProps {
 export function Footer({ clubConfig }: FooterProps) {
   return (
     <footer className="footer">
-      <p>&copy; {new Date().getFullYear()} {clubConfig.name} Masters Pool</p>
+      <p>&copy; {new Date().getFullYear()} Waldo Enterprises</p>
     </footer>
   );
 }

@@ -14,7 +14,6 @@ export function Header({ clubConfig }: HeaderProps) {
         </Link>
         <nav className="header-nav">
           <Link to="/">Home</Link>
-          <Link to="/rules">Rules</Link>
           <Link to="/entry">Enter</Link>
           <Link to="/leaderboard">Leaderboard</Link>
           <Link to="/lookup">My Entries</Link>
