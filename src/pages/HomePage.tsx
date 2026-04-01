@@ -18,9 +18,18 @@ export function HomePage({ clubConfig }: HomePageProps) {
   if (loading) return <LoadingState message="Loading pool..." />;
   if (error) return <ErrorState message={error} onRetry={refetch} />;
 
+  const droppedCount = clubConfig.pickCount - clubConfig.countedScores;
+
   return (
     <div className="page home-page">
-      <h1>{clubConfig.shortName} Masters Pool</h1>
+      <div className="home-hero">
+        <h1>{clubConfig.shortName} Masters Pool</h1>
+        <p className="home-welcome">
+          Welcome to the {clubConfig.name} Masters Tournament Pool.
+          Select your golfers, follow the action, and compete for bragging rights at the club.
+        </p>
+      </div>
+
       {pool ? (
         <div className="tournament-info">
           <h2>{pool.name}</h2>
@@ -38,22 +47,38 @@ export function HomePage({ clubConfig }: HomePageProps) {
       )}
 
       <div className="home-rules">
-        <h2>{clubConfig.shortName} Pool Rules</h2>
-        <ol className="rules-list">
-          {clubConfig.rulesDescription.map((rule, i) => (
-            <li key={i}>{rule}</li>
-          ))}
-        </ol>
-        <div className="rules-details">
-          <h3>Key Details</h3>
-          <ul>
-            <li>Pick {clubConfig.pickCount} golfers{clubConfig.useBuckets ? ' (1 from each bucket)' : ''}</li>
-            <li>At least {clubConfig.cutMinimum} must make the cut to qualify</li>
-            <li>Best {clubConfig.countedScores} scores are counted</li>
-            {clubConfig.maxEntriesPerEmail && (
-              <li>Maximum {clubConfig.maxEntriesPerEmail} entries per email</li>
-            )}
-          </ul>
+        <h2>How It Works</h2>
+        <div className="rules-card">
+          <div className="rules-grid">
+            <div className="rule-item">
+              <span className="rule-number">1</span>
+              <div>
+                <strong>Pick {clubConfig.pickCount} Golfers</strong>
+                <p>Choose {clubConfig.useBuckets ? '1 from each bucket' : 'any players from the field'}. Up to {clubConfig.maxEntriesPerEmail} entries per email.</p>
+              </div>
+            </div>
+            <div className="rule-item">
+              <span className="rule-number">2</span>
+              <div>
+                <strong>Make the Cut</strong>
+                <p>At least {clubConfig.cutMinimum} of your {clubConfig.pickCount} golfers must make the cut for your entry to qualify.</p>
+              </div>
+            </div>
+            <div className="rule-item">
+              <span className="rule-number">3</span>
+              <div>
+                <strong>Best {clubConfig.countedScores} Count</strong>
+                <p>Your lowest {clubConfig.countedScores} scores are totaled.{droppedCount > 0 ? ` If all ${clubConfig.pickCount} make the cut, the ${droppedCount} highest are dropped.` : ''}</p>
+              </div>
+            </div>
+            <div className="rule-item">
+              <span className="rule-number">4</span>
+              <div>
+                <strong>Lowest Score Wins</strong>
+                <p>The entry with the lowest aggregate counted score takes the title.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

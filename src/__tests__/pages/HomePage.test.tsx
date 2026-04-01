@@ -67,8 +67,8 @@ describe('HomePage', () => {
 
   it('renders rules section on home page', async () => {
     renderHomePage();
-    expect(await screen.findByText(/Pool Rules/i)).toBeInTheDocument();
-    expect(screen.getByText(/Key Details/i)).toBeInTheDocument();
+    expect(await screen.findByText(/How It Works/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lowest Score Wins/i)).toBeInTheDocument();
   });
 
   it('shows Crestmont pool name after loading', async () => {
