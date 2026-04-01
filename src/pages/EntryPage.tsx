@@ -19,10 +19,14 @@ interface EntryPageProps {
   clubConfig: ClubConfig;
 }
 
-/** Extract last name for sorting: "Ludvig Aberg" → "Aberg", "Rory McIlroy" → "McIlroy" */
+/** Sort by last name: handles "Last, First" and "First Last" formats */
 function lastNameSort(a: AvailableGolfer, b: AvailableGolfer): number {
-  const lastA = a.player_name.split(' ').slice(-1)[0] ?? '';
-  const lastB = b.player_name.split(' ').slice(-1)[0] ?? '';
+  const lastA = a.player_name.includes(',')
+    ? a.player_name.split(',')[0].trim()
+    : a.player_name.split(' ').slice(-1)[0] ?? '';
+  const lastB = b.player_name.includes(',')
+    ? b.player_name.split(',')[0].trim()
+    : b.player_name.split(' ').slice(-1)[0] ?? '';
   return lastA.localeCompare(lastB);
 }
 
