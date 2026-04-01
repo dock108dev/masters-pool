@@ -102,7 +102,7 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
         picks,
       });
 
-      navigate(`/${clubConfig.code}/confirmation`, { state: { confirmation: response } });
+      navigate('/confirmation', { state: { confirmation: response } });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
     } finally {

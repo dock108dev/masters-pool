@@ -23,21 +23,19 @@ describe('Header', () => {
 
   it('renders nav links with correct paths for RVCC', () => {
     renderHeader(rvccConfig);
-    const base = '/rvcc';
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', base);
-    expect(screen.getByRole('link', { name: 'Rules' })).toHaveAttribute('href', `${base}/rules`);
-    expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', `${base}/entry`);
-    expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', `${base}/leaderboard`);
-    expect(screen.getByRole('link', { name: 'My Entries' })).toHaveAttribute('href', `${base}/lookup`);
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Rules' })).toHaveAttribute('href', '/rules');
+    expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', '/entry');
+    expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', '/leaderboard');
+    expect(screen.getByRole('link', { name: 'My Entries' })).toHaveAttribute('href', '/lookup');
   });
 
   it('renders nav links with correct paths for Crestmont', () => {
     renderHeader(crestmontConfig);
-    const base = '/crestmont';
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', base);
-    expect(screen.getByRole('link', { name: 'Rules' })).toHaveAttribute('href', `${base}/rules`);
-    expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', `${base}/entry`);
-    expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', `${base}/leaderboard`);
-    expect(screen.getByRole('link', { name: 'My Entries' })).toHaveAttribute('href', `${base}/lookup`);
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Rules' })).toHaveAttribute('href', '/rules');
+    expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', '/entry');
+    expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', '/leaderboard');
+    expect(screen.getByRole('link', { name: 'My Entries' })).toHaveAttribute('href', '/lookup');
   });
 });

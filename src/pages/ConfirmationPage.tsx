@@ -5,7 +5,7 @@ interface ConfirmationPageProps {
   clubConfig: ClubConfig;
 }
 
-export function ConfirmationPage({ clubConfig }: ConfirmationPageProps) {
+export function ConfirmationPage({ clubConfig: _clubConfig }: ConfirmationPageProps) {
   const location = useLocation();
   const confirmation = (location.state as { confirmation?: EntrySubmissionResponse } | null)?.confirmation;
 
@@ -14,7 +14,7 @@ export function ConfirmationPage({ clubConfig }: ConfirmationPageProps) {
       <div className="page confirmation-page">
         <h1>No Confirmation Found</h1>
         <p>It looks like you arrived here without submitting an entry.</p>
-        <Link to={`/${clubConfig.code}/entry`} className="btn btn-primary">Submit an Entry</Link>
+        <Link to="/entry" className="btn btn-primary">Submit an Entry</Link>
       </div>
     );
   }
@@ -40,8 +40,8 @@ export function ConfirmationPage({ clubConfig }: ConfirmationPageProps) {
         </div>
       </div>
       <div className="confirmation-actions">
-        <Link to={`/${clubConfig.code}/leaderboard`} className="btn btn-primary">View Leaderboard</Link>
-        <Link to={`/${clubConfig.code}/entry`} className="btn btn-secondary">Submit Another Entry</Link>
+        <Link to="/leaderboard" className="btn btn-primary">View Leaderboard</Link>
+        <Link to="/entry" className="btn btn-secondary">Submit Another Entry</Link>
       </div>
     </div>
   );

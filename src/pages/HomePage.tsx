@@ -29,9 +29,9 @@ export function HomePage({ clubConfig }: HomePageProps) {
             Entry deadline: {new Date(pool.entry_deadline).toLocaleString()}
           </p>
           <div className="home-actions">
-            <Link to={`/${clubConfig.code}/entry`} className="btn btn-primary">Submit Entry</Link>
-            <Link to={`/${clubConfig.code}/leaderboard`} className="btn btn-secondary">View Leaderboard</Link>
-            <Link to={`/${clubConfig.code}/rules`} className="btn btn-secondary">How It Works</Link>
+            <Link to="/entry" className="btn btn-primary">Submit Entry</Link>
+            <Link to="/leaderboard" className="btn btn-secondary">View Leaderboard</Link>
+            <Link to="/rules" className="btn btn-secondary">How It Works</Link>
           </div>
         </div>
       ) : (
