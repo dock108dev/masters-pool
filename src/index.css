@@ -547,6 +547,97 @@ body {
   font-weight: 500;
 }
 
+/* ================================================================
+   Sticky Pick Banner
+   ================================================================ */
+
+.pick-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background: var(--color-white);
+  border-top: 2px solid var(--color-border);
+  padding: 12px 20px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.pick-banner-ready {
+  background: var(--color-green);
+  border-top-color: var(--color-green-dark);
+}
+
+.pick-banner-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.pick-banner-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-green);
+}
+
+.pick-banner-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.pick-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--color-green);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.pick-dot-filled {
+  background: var(--color-green);
+  transform: scale(1.1);
+}
+
+.pick-banner-submit {
+  display: block;
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 14px 24px;
+  background: var(--color-gold);
+  color: var(--color-green-dark);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pick-banner-submit:hover {
+  background: #d4b45c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pick-banner-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Add bottom padding to entry page so content isn't hidden behind the banner */
+.entry-page {
+  padding-bottom: 80px !important;
+}
+
 /* Other Player Write-in */
 
 .other-player-section {

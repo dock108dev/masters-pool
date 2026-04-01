@@ -72,6 +72,7 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
 
   const golfers: AvailableGolfer[] = field ? fieldToGolfers(field) : [];
   const buckets: GolferBucket[] | null = field ? fieldToBuckets(field) : null;
+  const isFull = selectedIds.length >= clubConfig.pickCount;
 
   const handleSelect = (dgId: number) => {
     setSelectedIds((prev) => [...prev, dgId]);
@@ -253,15 +254,47 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
           </div>
         )}
 
+        {/* Inline submit button (visible above the fold / non-mobile) */}
         <button
           type="submit"
-          className="btn btn-primary"
+          className="btn btn-primary entry-submit-inline"
           disabled={submitting}
           data-testid="submit-button"
         >
           {submitting ? 'Submitting...' : 'Submit Entry'}
         </button>
       </form>
+
+      {/* Sticky bottom banner — pick counter that becomes submit button */}
+      <div
+        className={`pick-banner ${isFull ? 'pick-banner-ready' : ''}`}
+        data-testid="pick-banner"
+      >
+        {isFull ? (
+          <button
+            type="button"
+            className="pick-banner-submit"
+            disabled={submitting}
+            onClick={() => {
+              const form = document.querySelector<HTMLFormElement>('[data-testid="entry-form"]');
+              form?.requestSubmit();
+            }}
+          >
+            {submitting ? 'Submitting...' : `All ${clubConfig.pickCount} Selected — Submit Entry`}
+          </button>
+        ) : (
+          <div className="pick-banner-count">
+            <div className="pick-banner-dots">
+              {Array.from({ length: clubConfig.pickCount }, (_, i) => (
+                <span key={i} className={`pick-dot ${i < selectedIds.length ? 'pick-dot-filled' : ''}`} />
+              ))}
+            </div>
+            <span className="pick-banner-text">
+              {selectedIds.length} / {clubConfig.pickCount} golfers selected
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
