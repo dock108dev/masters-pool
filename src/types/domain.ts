@@ -81,6 +81,7 @@ export interface EntryPick {
   dg_id: number;
   pick_slot: number;
   bucket_number?: number;
+  player_name?: string;
 }
 
 export interface EntrySubmissionRequest {

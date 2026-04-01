@@ -23,6 +23,20 @@ function renderLeaderboardPage(clubConfig = rvccConfig, path = '/rvcc/leaderboar
 }
 
 describe('LeaderboardPage', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ now: new Date('2026-04-09T13:00:00Z'), shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('shows locked message before tournament starts', () => {
+    vi.setSystemTime(new Date('2026-04-08T12:00:00Z'));
+    renderLeaderboardPage();
+    expect(screen.getByText(/leaderboard will be available/i)).toBeInTheDocument();
+  });
+
   it('renders loading state initially', () => {
     renderLeaderboardPage();
     expect(screen.getByText('Loading leaderboard...')).toBeInTheDocument();

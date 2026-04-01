@@ -19,9 +19,16 @@ interface EntryPageProps {
   clubConfig: ClubConfig;
 }
 
+/** Extract last name for sorting: "Ludvig Aberg" → "Aberg", "Rory McIlroy" → "McIlroy" */
+function lastNameSort(a: AvailableGolfer, b: AvailableGolfer): number {
+  const lastA = a.player_name.split(' ').slice(-1)[0] ?? '';
+  const lastB = b.player_name.split(' ').slice(-1)[0] ?? '';
+  return lastA.localeCompare(lastB);
+}
+
 function fieldToGolfers(field: PoolFieldResponse): AvailableGolfer[] {
-  if (field.players) return field.players;
-  if (field.buckets) return field.buckets.flatMap((b) => b.players);
+  if (field.players) return [...field.players].sort(lastNameSort);
+  if (field.buckets) return field.buckets.flatMap((b) => b.players).sort(lastNameSort);
   return [];
 }
 
@@ -30,15 +37,20 @@ function fieldToBuckets(field: PoolFieldResponse): GolferBucket[] | null {
   return field.buckets.map((b) => ({
     bucket_number: b.bucket_number,
     label: b.label,
-    golfers: b.players,
+    golfers: [...b.players].sort(lastNameSort),
   }));
 }
+
+// Write-in "Other" golfers use negative IDs to distinguish from real dg_ids
+let nextOtherId = -1;
 
 export function EntryPage({ clubConfig }: EntryPageProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [entryName, setEntryName] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [otherName, setOtherName] = useState('');
+  const [otherPlayers, setOtherPlayers] = useState<{ id: number; name: string }[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -64,6 +76,17 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
 
   const handleDeselect = (dgId: number) => {
     setSelectedIds((prev) => prev.filter((id) => id !== dgId));
+    setOtherPlayers((prev) => prev.filter((p) => p.id !== dgId));
+    setValidationErrors([]);
+  };
+
+  const handleAddOther = () => {
+    const trimmed = otherName.trim();
+    if (!trimmed) return;
+    const id = nextOtherId--;
+    setOtherPlayers((prev) => [...prev, { id, name: trimmed }]);
+    setSelectedIds((prev) => [...prev, id]);
+    setOtherName('');
     setValidationErrors([]);
   };
 
@@ -89,6 +112,10 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
       // Build picks array with pick_slot (1-indexed) and optional bucket_number
       const picks = selectedIds.map((dgId, index) => {
         const pick_slot = index + 1;
+        const other = otherPlayers.find((p) => p.id === dgId);
+        if (other) {
+          return { dg_id: 0, pick_slot, player_name: other.name };
+        }
         if (buckets) {
           const bucket = buckets.find((b) => b.golfers.some((g) => g.dg_id === dgId));
           return { dg_id: dgId, pick_slot, bucket_number: bucket?.bucket_number };
@@ -166,6 +193,45 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
             />
           )
         )}
+
+        <div className="other-player-section" data-testid="other-player-section">
+          <h4>Other</h4>
+          <p className="picker-instruction">Don't see your player? Type their name below.</p>
+          {otherPlayers.length > 0 && (
+            <div className="other-player-list">
+              {otherPlayers.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="golfer-option selected"
+                  onClick={() => handleDeselect(p.id)}
+                  data-testid={`other-player-${p.id}`}
+                >
+                  <span className="golfer-option-name">{p.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="other-player-input">
+            <input
+              type="text"
+              value={otherName}
+              onChange={(e) => setOtherName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddOther(); } }}
+              placeholder="Last, First (e.g. Aberg, Ludvig)"
+              data-testid="other-player-name"
+            />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleAddOther}
+              disabled={!otherName.trim()}
+              data-testid="add-other-player"
+            >
+              Add
+            </button>
+          </div>
+        </div>
 
         {validationErrors.length > 0 && (
           <div className="validation-errors" role="alert" data-testid="validation-errors">
