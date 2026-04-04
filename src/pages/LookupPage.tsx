@@ -86,7 +86,7 @@ export function LookupPage({ clubConfig }: LookupPageProps) {
               <p>Submitted: {new Date(entry.submittedAt).toLocaleString()}</p>
               <ul>
                 {entry.picks.map((pick, i) => (
-                  <li key={i}>Pick {pick.pick_slot}: dg_id {pick.dg_id}</li>
+                  <li key={i}>Pick {pick.pick_slot}: {pick.player_name ?? `dg_id ${pick.dg_id}`}</li>
                 ))}
               </ul>
             </div>

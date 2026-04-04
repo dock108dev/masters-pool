@@ -32,7 +32,7 @@ export function ConfirmationPage({ clubConfig: _clubConfig }: ConfirmationPagePr
           <ol>
             {confirmation.picks.map((pick, i) => (
               <li key={i}>
-                Pick {pick.pick_slot}: dg_id {pick.dg_id}
+                Pick {pick.pick_slot}: {pick.player_name ?? `dg_id ${pick.dg_id}`}
                 {pick.bucket_number != null ? ` (Bucket ${pick.bucket_number})` : ''}
               </li>
             ))}

@@ -13,9 +13,9 @@ const mockConfirmation: EntrySubmissionResponse = {
   email: 'user@example.com',
   entry_name: 'Test Player',
   picks: [
-    { dg_id: 18417, pick_slot: 1 },
-    { dg_id: 28237, pick_slot: 2 },
-    { dg_id: 21209, pick_slot: 3 },
+    { dg_id: 18417, pick_slot: 1, player_name: 'Scheffler, Scottie' },
+    { dg_id: 28237, pick_slot: 2, player_name: 'McIlroy, Rory' },
+    { dg_id: 21209, pick_slot: 3, player_name: 'Rahm, Jon' },
   ],
   submittedAt: '2026-04-09T10:00:00Z',
 };
@@ -79,10 +79,9 @@ describe('ConfirmationPage', () => {
 
     it('shows the list of golfer picks', () => {
       renderConfirmationPage({ confirmation: mockConfirmation });
-      // ConfirmationPage renders picks as "Pick N: dg_id XXXXX"
-      expect(screen.getByText(/Pick 1: dg_id 18417/)).toBeInTheDocument();
-      expect(screen.getByText(/Pick 2: dg_id 28237/)).toBeInTheDocument();
-      expect(screen.getByText(/Pick 3: dg_id 21209/)).toBeInTheDocument();
+      expect(screen.getByText(/Pick 1: Scheffler, Scottie/)).toBeInTheDocument();
+      expect(screen.getByText(/Pick 2: McIlroy, Rory/)).toBeInTheDocument();
+      expect(screen.getByText(/Pick 3: Rahm, Jon/)).toBeInTheDocument();
     });
 
     it('renders the confirmation page container', () => {

@@ -121,11 +121,13 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
         if (other) {
           return { dg_id: 0, pick_slot, player_name: other.name };
         }
+        const golfer = golfers.find((g) => g.dg_id === dgId);
+        const player_name = golfer?.player_name;
         if (buckets) {
           const bucket = buckets.find((b) => b.golfers.some((g) => g.dg_id === dgId));
-          return { dg_id: dgId, pick_slot, bucket_number: bucket?.bucket_number };
+          return { dg_id: dgId, pick_slot, player_name, bucket_number: bucket?.bucket_number };
         }
-        return { dg_id: dgId, pick_slot };
+        return { dg_id: dgId, pick_slot, player_name };
       });
 
       const response: EntrySubmissionResponse = await apiClient.submitEntry(pool!.id, {

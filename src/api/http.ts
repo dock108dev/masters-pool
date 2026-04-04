@@ -137,6 +137,7 @@ export class HttpApiClient implements ApiClient {
       picks: (e.picks as Record<string, unknown>[] ?? []).map((p: Record<string, unknown>) => ({
         dg_id: p.dg_id,
         pick_slot: p.pick_slot,
+        player_name: p.player_name,
         bucket_number: p.bucket_number,
       })),
       submittedAt: e.submitted_at ?? '',
