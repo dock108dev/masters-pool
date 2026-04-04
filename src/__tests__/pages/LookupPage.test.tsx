@@ -74,9 +74,8 @@ describe('LookupPage', () => {
     await user.type(screen.getByTestId('lookup-email-input'), 'test@example.com');
     await user.click(screen.getByTestId('lookup-button'));
     await screen.findByTestId('lookup-results');
-    // Mock returns one entry: "Mock Entry" with confirmation CONF-ABC123
+    // Mock returns one entry: "Mock Entry"
     expect(screen.getByText('Mock Entry')).toBeInTheDocument();
-    expect(screen.getByText(/CONF-ABC123/)).toBeInTheDocument();
   });
 
   it('displays pick slot and dg_id in lookup results', async () => {
@@ -85,8 +84,7 @@ describe('LookupPage', () => {
     await user.type(screen.getByTestId('lookup-email-input'), 'test@example.com');
     await user.click(screen.getByTestId('lookup-button'));
     await screen.findByTestId('lookup-results');
-    // Mock returns picks with dg_ids 18417 (Scottie Scheffler) and 28237 (Rory McIlroy)
-    // LookupPage renders these as "Pick N: dg_id XXXXX"
+    // Mock returns picks with dg_ids — without player_name, falls back to dg_id display
     expect(screen.getByText(/Pick 1: dg_id 18417/)).toBeInTheDocument();
     expect(screen.getByText(/Pick 2: dg_id 28237/)).toBeInTheDocument();
   });

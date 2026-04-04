@@ -82,8 +82,6 @@ export function LookupPage({ clubConfig }: LookupPageProps) {
           {result.entries.map((entry) => (
             <div key={entry.entry_id} className="lookup-entry-card">
               <p><strong>{entry.entry_name}</strong></p>
-              <p>Confirmation: {entry.confirmationCode}</p>
-              <p>Submitted: {new Date(entry.submittedAt).toLocaleString()}</p>
               <ul>
                 {entry.picks.map((pick, i) => (
                   <li key={i}>Pick {pick.pick_slot}: {pick.player_name ?? `dg_id ${pick.dg_id}`}</li>
