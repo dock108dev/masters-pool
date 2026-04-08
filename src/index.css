@@ -1040,6 +1040,88 @@ body {
 }
 
 /* ================================================================
+   Crestmont Country Club Theme
+   Classic, refined aesthetic matching crestmontcountryclub.com
+   ================================================================ */
+
+[data-club="crestmont"] {
+  --color-green: #27523B;
+  --color-green-dark: #1c3f2d;
+  --color-green-light: #e9f0ec;
+  --color-gold: #b7a56e;
+  --color-gold-light: #f3efe4;
+}
+
+[data-club="crestmont"] body,
+.app-layout[data-club="crestmont"] {
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+[data-club="crestmont"] .header {
+  background: linear-gradient(135deg, #27523B 0%, #1c3f2d 100%);
+}
+
+[data-club="crestmont"] .header-title {
+  color: #b7a56e;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  letter-spacing: 0.06em;
+}
+
+[data-club="crestmont"] .header-nav a {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+[data-club="crestmont"] .page h1 {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #27523B;
+  letter-spacing: 0.04em;
+}
+
+[data-club="crestmont"] .page h2,
+[data-club="crestmont"] .page h3 {
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+[data-club="crestmont"] .home-page h1 {
+  letter-spacing: 0.06em;
+}
+
+[data-club="crestmont"] .rules-card {
+  border-top: 4px solid #b7a56e;
+}
+
+[data-club="crestmont"] .btn-primary {
+  background: linear-gradient(135deg, #27523B 0%, #1c3f2d 100%);
+}
+
+[data-club="crestmont"] .btn-primary:hover {
+  background: linear-gradient(135deg, #2f6347 0%, #27523B 100%);
+}
+
+[data-club="crestmont"] .btn-secondary {
+  color: #27523B;
+  border-color: #27523B;
+}
+
+[data-club="crestmont"] .btn-secondary:hover {
+  background: #e9f0ec;
+}
+
+[data-club="crestmont"] .footer {
+  background: #1c3f2d;
+}
+
+[data-club="crestmont"] .leaderboard-table th {
+  background: #27523B;
+}
+
+[data-club="crestmont"] .bucket-label {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #27523B;
+  border-bottom-color: #e9f0ec;
+}
+
+/* ================================================================
    Mobile: Tablets (768px)
    ================================================================ */
 

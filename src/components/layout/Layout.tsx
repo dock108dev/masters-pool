@@ -10,7 +10,7 @@ interface LayoutProps {
 
 export function Layout({ clubConfig, children }: LayoutProps) {
   return (
-    <div className="app-layout">
+    <div className="app-layout" data-club={clubConfig.code}>
       <Header clubConfig={clubConfig} />
       <main className="main-content">{children}</main>
       <Footer clubConfig={clubConfig} />
