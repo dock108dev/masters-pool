@@ -178,14 +178,14 @@ describe('Crestmont club config', () => {
     expect(crestmont.bucketLabels).toHaveLength(6);
   });
 
-  it('bucketLabels are "Bucket A" through "Bucket F"', () => {
+  it('bucketLabels are "Group 1" through "Group 6"', () => {
     expect(crestmont.bucketLabels).toEqual([
-      'Bucket A',
-      'Bucket B',
-      'Bucket C',
-      'Bucket D',
-      'Bucket E',
-      'Bucket F',
+      'Group 1',
+      'Group 2',
+      'Group 3',
+      'Group 4',
+      'Group 5',
+      'Group 6',
     ]);
   });
 
@@ -209,9 +209,9 @@ describe('Crestmont club config', () => {
     }
   });
 
-  it('mentions 6 buckets in the rules', () => {
+  it('mentions 6 groups in the rules', () => {
     const joined = crestmont.rulesDescription.join(' ');
-    expect(joined).toMatch(/6 bucket/i);
+    expect(joined).toMatch(/6 group/i);
   });
 
   it('mentions 4 counted scores in the rules', () => {

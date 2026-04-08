@@ -13,6 +13,7 @@ export const CLUB_CONFIGS: Record<ClubCode, ClubConfig> = {
     cutMinimum: 5,
     countedScores: 5,
     useBuckets: false,
+    allowSelfServiceEntry: true,
     maxEntriesPerEmail: 3,
     rulesDescription: [
       'Pick any 7 golfers from the field.',
@@ -30,10 +31,12 @@ export const CLUB_CONFIGS: Record<ClubCode, ClubConfig> = {
     cutMinimum: 4,
     countedScores: 4,
     useBuckets: true,
-    bucketLabels: ['Bucket A', 'Bucket B', 'Bucket C', 'Bucket D', 'Bucket E', 'Bucket F'],
+    bucketLabels: ['Group 1', 'Group 2', 'Group 3', 'Group 4', 'Group 5', 'Group 6'],
+    allowSelfServiceEntry: false,
     maxEntriesPerEmail: 2,
     rulesDescription: [
-      'Pick 1 golfer from each of the 6 buckets.',
+      '$30 per entry — billed to member accounts.',
+      'Pick 1 golfer from each of the 6 groups.',
       'At least 4 of your golfers must make the cut to qualify.',
       'Your best 4 scores are counted toward your total.',
       'Lowest aggregate counted score wins.',

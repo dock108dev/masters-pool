@@ -16,7 +16,7 @@ export interface ClubConfig {
   useBuckets: boolean;
   bucketLabels?: string[];
   maxEntriesPerEmail?: number;
-  // uploadEnabled/uploadRequired removed — file upload is admin-only
+  allowSelfServiceEntry: boolean;
   rulesDescription: string[];
 }
 

@@ -38,7 +38,9 @@ export function HomePage({ clubConfig }: HomePageProps) {
             Entry deadline: {new Date(pool.entry_deadline).toLocaleString()}
           </p>
           <div className="home-actions">
-            <Link to="/entry" className="btn btn-primary">Submit Entry</Link>
+            {clubConfig.allowSelfServiceEntry && (
+              <Link to="/entry" className="btn btn-primary">Submit Entry</Link>
+            )}
             <Link to="/lookup" className="btn btn-secondary">My Entries</Link>
           </div>
         </div>
@@ -54,7 +56,7 @@ export function HomePage({ clubConfig }: HomePageProps) {
               <span className="rule-number">1</span>
               <div>
                 <strong>Pick {clubConfig.pickCount} Golfers</strong>
-                <p>Choose {clubConfig.useBuckets ? '1 from each bucket' : 'any players from the field'}. Up to {clubConfig.maxEntriesPerEmail} entries per email.</p>
+                <p>Choose {clubConfig.useBuckets ? '1 from each group' : 'any players from the field'}. Up to {clubConfig.maxEntriesPerEmail} entries per email.</p>
               </div>
             </div>
             <div className="rule-item">

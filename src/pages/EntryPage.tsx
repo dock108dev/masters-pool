@@ -144,6 +144,15 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
     }
   };
 
+  if (!clubConfig.allowSelfServiceEntry) {
+    return (
+      <div className="page entry-page">
+        <h1>Entries</h1>
+        <p>Entries for the {clubConfig.shortName} pool are managed by the club. Use "My Entries" to look up your submitted picks.</p>
+      </div>
+    );
+  }
+
   if (poolLoading || fieldLoading) return <LoadingState message="Loading entry form..." />;
   if (fieldError) return <ErrorState message={fieldError} onRetry={refetchField} />;
   if (!pool) return <ErrorState message="No active pool found." />;

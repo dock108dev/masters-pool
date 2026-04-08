@@ -109,24 +109,12 @@ describe('EntryPage', () => {
     });
   });
 
-  describe('Crestmont (bucket picker)', () => {
-    it('renders bucket picker for Crestmont config once buckets load', async () => {
+  describe('Crestmont (no self-service entry)', () => {
+    it('shows club-managed message instead of entry form', () => {
       renderEntryPage(crestmontConfig, '/crestmont/entry');
-      await waitForCrestmontFormStable();
-      // BucketPicker renders bucket labels; Crestmont has 6 buckets: Bucket A … Bucket F
-      expect(screen.getByText('Bucket A')).toBeInTheDocument();
-      expect(screen.getByText('Bucket B')).toBeInTheDocument();
-      expect(screen.getByText('Bucket F')).toBeInTheDocument();
-    });
-
-    it('shows validation errors when submitting empty Crestmont form', async () => {
-      renderEntryPage(crestmontConfig, '/crestmont/entry');
-      await waitForCrestmontFormStable();
-      fireEvent.submit(screen.getByTestId('entry-form'));
-      await waitFor(() => {
-        expect(screen.getByTestId('validation-errors')).toBeInTheDocument();
-      });
-      expect(screen.getByText(/Email is required/i)).toBeInTheDocument();
+      expect(screen.getByText('Entries')).toBeInTheDocument();
+      expect(screen.getByText(/managed by the club/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
     });
   });
 });
