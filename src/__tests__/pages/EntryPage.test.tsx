@@ -39,13 +39,6 @@ async function waitForRvccFormStable() {
   await screen.findByText('Scottie Scheffler');
 }
 
-/**
- * Wait for the Crestmont entry form to be fully settled.
- * "Bucket A" is rendered by BucketPicker only after buckets have loaded.
- */
-async function waitForCrestmontFormStable() {
-  await screen.findByText('Bucket A');
-}
 
 describe('EntryPage', () => {
   describe('RVCC', () => {
