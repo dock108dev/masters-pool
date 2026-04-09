@@ -30,7 +30,7 @@ describe('LeaderboardTable', () => {
     const table = screen.getByTestId('leaderboard-table');
     const thead = table.querySelector('thead')!;
     const headerRow = within(thead).getAllByRole('columnheader');
-    // 5 fixed columns (Pos, Entry, Total, Status, Counted) + 7 golfer columns
+    // Fixed columns (Pos, Entry, Total, Status when cut made) + 7 golfer columns
     const golferHeaders = headerRow.filter((th) => th.textContent?.startsWith('Golfer'));
     expect(golferHeaders).toHaveLength(7);
   });

@@ -8,6 +8,18 @@ interface LeaderboardTableProps {
   clubConfig: ClubConfig;
 }
 
+function sortPicks(picks: LeaderboardData['standings'][0]['picks']) {
+  return [...picks].sort((a, b) => {
+    const aHasScore = a.total_score != null;
+    const bHasScore = b.total_score != null;
+    // Golfers without scores go to the end, sorted alphabetically
+    if (!aHasScore && !bHasScore) return a.player_name.localeCompare(b.player_name);
+    if (!aHasScore) return 1;
+    if (!bHasScore) return -1;
+    return a.total_score! - b.total_score!;
+  });
+}
+
 export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
   if (data.standings.length === 0) {
     return <EmptyState title="No entries yet" description="The leaderboard will populate once entries are submitted." />;
@@ -16,6 +28,11 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
   const golferColumnHeaders = clubConfig.useBuckets && clubConfig.bucketLabels
     ? clubConfig.bucketLabels
     : Array.from({ length: clubConfig.pickCount }, (_, i) => `Golfer ${i + 1}`);
+
+  // Show status column only after the cut has been made
+  const cutMade = data.standings.some((s) =>
+    s.picks.some((p) => p.made_cut || p.status === 'cut')
+  );
 
   return (
     <div className="leaderboard-wrapper">
@@ -29,8 +46,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
               <th className="col-pos">Pos</th>
               <th className="col-entry">Entry</th>
               <th className="col-total">Total</th>
-              <th className="col-status">Status</th>
-              <th className="col-counted">Counted</th>
+              {cutMade && <th className="col-status">Status</th>}
               {golferColumnHeaders.map((label, i) => (
                 <th key={i} className="col-golfer">{label}</th>
               ))}
@@ -42,6 +58,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
               const rankDisplay = standing.rank != null
                 ? `${standing.is_tied ? 'T' : ''}${standing.rank}`
                 : '-';
+              const sortedPicks = sortPicks(standing.picks);
 
               return (
                 <tr
@@ -51,18 +68,19 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
                   <td className="col-pos">{rankDisplay}</td>
                   <td className="col-entry">{standing.entry_name}</td>
                   <td className="col-total">{formatScore(standing.aggregate_score)}</td>
-                  <td className="col-status">
-                    <span
-                      className={`qualification-badge ${isQualified ? 'qualified' : standing.qualification_status === 'pending' ? 'pending' : 'not-qualified'}`}
-                    >
-                      {isQualified ? 'Q' : standing.qualification_status === 'pending' ? 'P' : 'NQ'}
-                    </span>
-                    <span className="qualification-note">
-                      {standing.qualified_golfers_count} made cut
-                    </span>
-                  </td>
-                  <td className="col-counted">{standing.counted_golfers_count}</td>
-                  {standing.picks.map((pick) => (
+                  {cutMade && (
+                    <td className="col-status">
+                      <span
+                        className={`qualification-badge ${isQualified ? 'qualified' : standing.qualification_status === 'pending' ? 'pending' : 'not-qualified'}`}
+                      >
+                        {isQualified ? 'Q' : standing.qualification_status === 'pending' ? 'P' : 'NQ'}
+                      </span>
+                      <span className="qualification-note">
+                        {standing.qualified_golfers_count} made cut
+                      </span>
+                    </td>
+                  )}
+                  {sortedPicks.map((pick) => (
                     <GolferCell key={pick.dg_id} pick={pick} />
                   ))}
                 </tr>
