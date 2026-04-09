@@ -38,8 +38,10 @@ export function HomePage({ clubConfig }: HomePageProps) {
             Entry deadline: {new Date(pool.entry_deadline).toLocaleString()}
           </p>
           <div className="home-actions">
-            {clubConfig.allowSelfServiceEntry && (
+            {clubConfig.allowSelfServiceEntry ? (
               <Link to="/entry" className="btn btn-primary">Submit Entry</Link>
+            ) : (
+              <Link to="/leaderboard" className="btn btn-primary">View Leaderboard</Link>
             )}
             <Link to="/lookup" className="btn btn-secondary">My Entries</Link>
           </div>

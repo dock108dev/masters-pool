@@ -147,8 +147,8 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
   if (!clubConfig.allowSelfServiceEntry) {
     return (
       <div className="page entry-page">
-        <h1>Entries</h1>
-        <p>Entries for the {clubConfig.shortName} pool are managed by the club. Use "My Entries" to look up your submitted picks.</p>
+        <h1>Entries Closed</h1>
+        <p>Entries for the {clubConfig.shortName} pool are now closed. Use "My Entries" to look up your submitted picks.</p>
       </div>
     );
   }
