@@ -29,10 +29,9 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
     ? clubConfig.bucketLabels
     : Array.from({ length: clubConfig.pickCount }, (_, i) => `Golfer ${i + 1}`);
 
-  // Show status column only after the cut has been made
-  const cutMade = data.standings.some((s) =>
-    s.picks.some((p) => p.made_cut || p.status === 'cut')
-  );
+  // Show status column only on Saturday/Sunday (after the cut)
+  const day = new Date().getDay();
+  const showStatus = day === 0 || day === 6;
 
   return (
     <div className="leaderboard-wrapper">
@@ -46,7 +45,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
               <th className="col-pos">Pos</th>
               <th className="col-entry">Entry</th>
               <th className="col-total">Total</th>
-              {cutMade && <th className="col-status">Status</th>}
+              {showStatus && <th className="col-status">Status</th>}
               {golferColumnHeaders.map((label, i) => (
                 <th key={i} className="col-golfer">{label}</th>
               ))}
@@ -68,7 +67,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
                   <td className="col-pos">{rankDisplay}</td>
                   <td className="col-entry">{standing.entry_name}</td>
                   <td className="col-total">{formatScore(standing.aggregate_score)}</td>
-                  {cutMade && (
+                  {showStatus && (
                     <td className="col-status">
                       <span
                         className={`qualification-badge ${isQualified ? 'qualified' : standing.qualification_status === 'pending' ? 'pending' : 'not-qualified'}`}

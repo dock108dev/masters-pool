@@ -16,14 +16,21 @@ export function GolferCell({ pick }: GolferCellProps) {
     .filter(Boolean)
     .join(' ');
 
-  const scoreDisplay = isMissedCut
+  const thruDisplay = isMissedCut
     ? pick.status.toUpperCase()
-    : `${formatScore(pick.total_score)} / ${formatThru(pick.thru)}`;
+    : `Thru ${formatThru(pick.thru)}`;
+
+  const totalDisplay = formatScore(pick.total_score);
 
   return (
     <td className={className} data-testid={`golfer-cell-${pick.dg_id}`}>
-      <span className="golfer-name">{pick.player_name}</span>
-      <span className="golfer-score">{scoreDisplay}</span>
+      <div className="golfer-cell-inner">
+        <div className="golfer-info">
+          <span className="golfer-name">{pick.player_name}</span>
+          <span className="golfer-thru">{thruDisplay}</span>
+        </div>
+        <span className="golfer-total">{totalDisplay}</span>
+      </div>
     </td>
   );
 }

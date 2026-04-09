@@ -54,13 +54,16 @@ describe('LeaderboardTable', () => {
     expect(screen.getByText(/Last scored:/)).toBeInTheDocument();
   });
 
-  it('shows qualification badge (Q/NQ)', () => {
+  it('shows qualification badge (Q/NQ) on weekends only', () => {
+    const day = new Date().getDay();
+    const isWeekend = day === 0 || day === 6;
     render(<LeaderboardTable data={MOCK_RVCC_LEADERBOARD} clubConfig={rvccConfig} />);
-    // e1 and e2 are qualified, e3 is not
-    const qualifiedBadges = screen.getAllByText('Q');
-    const notQualifiedBadges = screen.getAllByText('NQ');
-    expect(qualifiedBadges.length).toBeGreaterThan(0);
-    expect(notQualifiedBadges.length).toBeGreaterThan(0);
+    if (isWeekend) {
+      expect(screen.getAllByText('Q').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('NQ').length).toBeGreaterThan(0);
+    } else {
+      expect(screen.queryByText('NQ')).not.toBeInTheDocument();
+    }
   });
 
   it('shows position and total score', () => {

@@ -36,11 +36,12 @@ function renderCell(pick: LeaderboardPick) {
 }
 
 describe('GolferCell', () => {
-  it('renders golfer name and score for active golfer', () => {
+  it('renders golfer name, thru, and total for active golfer', () => {
     renderCell(makePick());
     expect(screen.getByText('Scottie Scheffler')).toBeInTheDocument();
-    // Active golfers show score / thru — thru=18 formats as 'F'
-    expect(screen.getByText('-5 / F')).toBeInTheDocument();
+    // thru=18 formats as 'F'
+    expect(screen.getByText('Thru F')).toBeInTheDocument();
+    expect(screen.getByText('-5')).toBeInTheDocument();
   });
 
   it('renders CUT status correctly', () => {

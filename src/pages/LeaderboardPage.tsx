@@ -24,7 +24,8 @@ export function LeaderboardPage({ clubConfig }: LeaderboardPageProps) {
 
   const { data: leaderboard, loading: lbLoading, error, refetch } = useApi(
     () => (!locked && pool) ? apiClient.getLeaderboard(pool.id) : Promise.reject(new Error('No pool')),
-    [pool?.id ?? 0, locked]
+    [pool?.id ?? 0, locked],
+    { pollingInterval: 5 * 60 * 1000 }
   );
 
   if (locked) {
