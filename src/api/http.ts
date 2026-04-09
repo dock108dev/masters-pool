@@ -80,7 +80,7 @@ export class HttpApiClient implements ApiClient {
     if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.status}`);
     const data = await res.json();
 
-    // Map backend "leaderboard" with "players" → frontend "standings" with "picks"
+    // Map backend "leaderboard" → frontend "standings"
     const standings = (data.leaderboard ?? []).map((entry: Record<string, unknown>) => ({
       rank: entry.rank ?? null,
       is_tied: entry.is_tied ?? false,
@@ -92,7 +92,7 @@ export class HttpApiClient implements ApiClient {
       qualified_golfers_count: entry.qualified_golfers_count ?? 0,
       counted_golfers_count: entry.counted_golfers_count ?? 0,
       is_complete: entry.is_complete ?? false,
-      picks: (entry.players as Record<string, unknown>[] ?? []).map((p: Record<string, unknown>) => ({
+      picks: ((entry.picks ?? entry.players) as Record<string, unknown>[] ?? []).map((p: Record<string, unknown>) => ({
         dg_id: p.dg_id,
         player_name: p.player_name,
         total_score: p.total_score ?? null,
