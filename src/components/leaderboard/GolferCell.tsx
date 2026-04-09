@@ -1,5 +1,5 @@
 import type { LeaderboardPick } from '../../types/domain';
-import { formatScore, formatThru } from '../../utils/formatting';
+import { effectiveScore, formatScore, formatThru } from '../../utils/formatting';
 
 interface GolferCellProps {
   pick: LeaderboardPick;
@@ -20,7 +20,7 @@ export function GolferCell({ pick }: GolferCellProps) {
     ? pick.status.toUpperCase()
     : `Thru ${formatThru(pick.thru)}`;
 
-  const totalDisplay = formatScore(pick.total_score);
+  const totalDisplay = formatScore(effectiveScore(pick.total_score, pick.thru));
 
   return (
     <td className={className} data-testid={`golfer-cell-${pick.dg_id}`}>

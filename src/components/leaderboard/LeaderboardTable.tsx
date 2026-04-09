@@ -1,7 +1,7 @@
 import type { LeaderboardData, ClubConfig } from '../../types/domain';
 import { GolferCell } from './GolferCell';
 import { EmptyState } from '../common/EmptyState';
-import { formatScore, formatLastUpdated } from '../../utils/formatting';
+import { effectiveScore, formatScore, formatLastUpdated } from '../../utils/formatting';
 
 interface LeaderboardTableProps {
   data: LeaderboardData;
@@ -10,13 +10,13 @@ interface LeaderboardTableProps {
 
 function sortPicks(picks: LeaderboardData['standings'][0]['picks']) {
   return [...picks].sort((a, b) => {
-    const aHasScore = a.total_score != null;
-    const bHasScore = b.total_score != null;
+    const aScore = effectiveScore(a.total_score, a.thru);
+    const bScore = effectiveScore(b.total_score, b.thru);
     // Golfers without scores go to the end, sorted alphabetically
-    if (!aHasScore && !bHasScore) return a.player_name.localeCompare(b.player_name);
-    if (!aHasScore) return 1;
-    if (!bHasScore) return -1;
-    return a.total_score! - b.total_score!;
+    if (aScore == null && bScore == null) return a.player_name.localeCompare(b.player_name);
+    if (aScore == null) return 1;
+    if (bScore == null) return -1;
+    return aScore - bScore;
   });
 }
 

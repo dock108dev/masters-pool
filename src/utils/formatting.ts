@@ -1,5 +1,11 @@
 import type { GolferStatus } from '../types/domain';
 
+export function effectiveScore(score: number | null, thru: number | null): number | null {
+  if (score != null) return score;
+  if (thru != null && thru > 0) return 0;
+  return null;
+}
+
 export function formatScore(score: number | null): string {
   if (score === null) return '-';
   if (score === 0) return 'E';
