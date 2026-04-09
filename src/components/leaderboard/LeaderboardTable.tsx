@@ -8,8 +8,8 @@ interface LeaderboardTableProps {
   clubConfig: ClubConfig;
 }
 
-function sortPicks(picks: LeaderboardData['standings'][0]['picks']) {
-  return [...picks].sort((a, b) => {
+function sortAndMarkPicks(picks: LeaderboardData['standings'][0]['picks'], countedScores: number) {
+  const sorted = [...picks].sort((a, b) => {
     const aScore = effectiveScore(a.total_score, a.thru);
     const bScore = effectiveScore(b.total_score, b.thru);
     // Golfers without scores go to the end, sorted alphabetically
@@ -17,6 +17,20 @@ function sortPicks(picks: LeaderboardData['standings'][0]['picks']) {
     if (aScore == null) return 1;
     if (bScore == null) return -1;
     return aScore - bScore;
+  });
+
+  // Recalculate counted/dropped using effective scores
+  let countedSoFar = 0;
+  return sorted.map((pick) => {
+    const isMissedCut = pick.status === 'cut' || pick.status === 'wd' || pick.status === 'dq';
+    const hasScore = effectiveScore(pick.total_score, pick.thru) != null;
+    const shouldCount = !isMissedCut && hasScore && countedSoFar < countedScores;
+    if (shouldCount) countedSoFar++;
+    return {
+      ...pick,
+      counts_toward_total: shouldCount,
+      is_dropped: !isMissedCut && hasScore && !shouldCount,
+    };
   });
 }
 
@@ -55,7 +69,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
               const rankDisplay = standing.rank != null
                 ? `${standing.is_tied ? 'T' : ''}${standing.rank}`
                 : '-';
-              const sortedPicks = sortPicks(standing.picks);
+              const sortedPicks = sortAndMarkPicks(standing.picks, clubConfig.countedScores);
 
               return (
                 <tr
