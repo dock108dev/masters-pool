@@ -43,7 +43,9 @@ export function HomePage({ clubConfig }: HomePageProps) {
             ) : (
               <Link to="/leaderboard" className="btn btn-primary">View Leaderboard</Link>
             )}
-            <Link to="/lookup" className="btn btn-secondary">My Entries</Link>
+            {clubConfig.allowSelfServiceEntry && (
+              <Link to="/lookup" className="btn btn-secondary">My Entries</Link>
+            )}
           </div>
         </div>
       ) : (

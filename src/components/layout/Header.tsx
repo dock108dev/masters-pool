@@ -16,7 +16,7 @@ export function Header({ clubConfig }: HeaderProps) {
           <Link to="/">Home</Link>
           {clubConfig.allowSelfServiceEntry && <Link to="/entry">Enter</Link>}
           <Link to="/leaderboard">Leaderboard</Link>
-          <Link to="/lookup">My Entries</Link>
+          {clubConfig.allowSelfServiceEntry && <Link to="/lookup">My Entries</Link>}
         </nav>
       </div>
     </header>

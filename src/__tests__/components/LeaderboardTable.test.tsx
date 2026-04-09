@@ -35,17 +35,13 @@ describe('LeaderboardTable', () => {
     expect(golferHeaders).toHaveLength(7);
   });
 
-  it('renders 6 golfer columns with bucket labels for Crestmont', () => {
+  it('renders 6 golfer columns for Crestmont', () => {
     render(<LeaderboardTable data={MOCK_CRESTMONT_LEADERBOARD} clubConfig={crestmontConfig} />);
     const table = screen.getByTestId('leaderboard-table');
     const thead = table.querySelector('thead')!;
     const headerRow = within(thead).getAllByRole('columnheader');
-    const bucketLabels = crestmontConfig.bucketLabels!;
-    const bucketHeaders = headerRow.filter((th) => bucketLabels.includes(th.textContent ?? ''));
-    expect(bucketHeaders).toHaveLength(6);
-    bucketLabels.forEach((label) => {
-      expect(screen.getByRole('columnheader', { name: label })).toBeInTheDocument();
-    });
+    const golferHeaders = headerRow.filter((th) => th.textContent?.startsWith('Golfer'));
+    expect(golferHeaders).toHaveLength(6);
   });
 
   it('shows last scored timestamp', () => {

@@ -25,9 +25,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
     return <EmptyState title="No entries yet" description="The leaderboard will populate once entries are submitted." />;
   }
 
-  const golferColumnHeaders = clubConfig.useBuckets && clubConfig.bucketLabels
-    ? clubConfig.bucketLabels
-    : Array.from({ length: clubConfig.pickCount }, (_, i) => `Golfer ${i + 1}`);
+  const golferColumnHeaders = Array.from({ length: clubConfig.pickCount }, (_, i) => `Golfer ${i + 1}`);
 
   // Show status column only on Saturday/Sunday (after the cut)
   const day = new Date().getDay();

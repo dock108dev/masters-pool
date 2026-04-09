@@ -26,14 +26,14 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('link', { name: 'Enter' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', '/leaderboard');
-    expect(screen.getByRole('link', { name: 'My Entries' })).toHaveAttribute('href', '/lookup');
+    expect(screen.queryByRole('link', { name: 'My Entries' })).not.toBeInTheDocument();
   });
 
-  it('renders nav links with correct paths for Crestmont (no Enter link)', () => {
+  it('renders nav links with correct paths for Crestmont (no Enter or My Entries link)', () => {
     renderHeader(crestmontConfig);
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('link', { name: 'Enter' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', '/leaderboard');
-    expect(screen.getByRole('link', { name: 'My Entries' })).toHaveAttribute('href', '/lookup');
+    expect(screen.queryByRole('link', { name: 'My Entries' })).not.toBeInTheDocument();
   });
 });

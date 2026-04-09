@@ -38,7 +38,6 @@ describe('EntryPage', () => {
     it('shows entries closed message instead of entry form', () => {
       renderEntryPage(crestmontConfig, '/crestmont/entry');
       expect(screen.getByText('Entries Closed')).toBeInTheDocument();
-      expect(screen.getByText(/now closed/i)).toBeInTheDocument();
       expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
     });
   });

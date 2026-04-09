@@ -60,9 +60,10 @@ describe('HomePage', () => {
     expect(await screen.findByRole('link', { name: /View Leaderboard/i })).toBeInTheDocument();
   });
 
-  it('renders My Entries link after loading', async () => {
+  it('does not render My Entries link when self-service entry is disabled', async () => {
     renderHomePage();
-    expect(await screen.findByRole('link', { name: /My Entries/i })).toBeInTheDocument();
+    await screen.findByRole('link', { name: /View Leaderboard/i });
+    expect(screen.queryByRole('link', { name: /My Entries/i })).not.toBeInTheDocument();
   });
 
   it('renders rules section on home page', async () => {

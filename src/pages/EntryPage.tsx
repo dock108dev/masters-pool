@@ -148,7 +148,7 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
     return (
       <div className="page entry-page">
         <h1>Entries Closed</h1>
-        <p>Entries for the {clubConfig.shortName} pool are now closed. Use "My Entries" to look up your submitted picks.</p>
+        <p>Entries for the {clubConfig.shortName} pool are now closed.</p>
       </div>
     );
   }
