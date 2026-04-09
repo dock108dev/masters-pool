@@ -9,7 +9,7 @@ export function GolferCell({ pick }: GolferCellProps) {
   const isMissedCut = pick.status === 'cut' || pick.status === 'wd' || pick.status === 'dq';
   const className = [
     'golfer-cell',
-    pick.counts_toward_total ? 'golfer-counted' : 'golfer-not-counted',
+    (pick.counts_toward_total || !isMissedCut) ? 'golfer-counted' : 'golfer-not-counted',
     pick.is_dropped ? 'golfer-dropped' : '',
     isMissedCut ? 'golfer-inactive' : '',
   ]
