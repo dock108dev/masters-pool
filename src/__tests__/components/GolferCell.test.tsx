@@ -64,18 +64,11 @@ describe('GolferCell', () => {
     expect(cell).not.toHaveClass('golfer-not-counted');
   });
 
-  it('applies golfer-not-counted class only for inactive golfers', () => {
-    renderCell(makePick({ status: 'cut', counts_toward_total: false }));
+  it('applies golfer-not-counted class when counts_toward_total is false', () => {
+    renderCell(makePick({ counts_toward_total: false }));
     const cell = screen.getByTestId('golfer-cell-18417');
     expect(cell).toHaveClass('golfer-not-counted');
     expect(cell).not.toHaveClass('golfer-counted');
-  });
-
-  it('does not grey out active golfers even when counts_toward_total is false', () => {
-    renderCell(makePick({ counts_toward_total: false }));
-    const cell = screen.getByTestId('golfer-cell-18417');
-    expect(cell).toHaveClass('golfer-counted');
-    expect(cell).not.toHaveClass('golfer-not-counted');
   });
 
   it('applies golfer-inactive class for cut/wd/dq', () => {

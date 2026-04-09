@@ -1,36 +1,22 @@
 import type { LeaderboardData, ClubConfig } from '../../types/domain';
 import { GolferCell } from './GolferCell';
 import { EmptyState } from '../common/EmptyState';
-import { effectiveScore, formatScore, formatLastUpdated } from '../../utils/formatting';
+import { formatScore, formatLastUpdated } from '../../utils/formatting';
 
 interface LeaderboardTableProps {
   data: LeaderboardData;
   clubConfig: ClubConfig;
 }
 
-function sortAndMarkPicks(picks: LeaderboardData['standings'][0]['picks'], countedScores: number) {
-  const sorted = [...picks].sort((a, b) => {
-    const aScore = effectiveScore(a.total_score, a.thru);
-    const bScore = effectiveScore(b.total_score, b.thru);
+function sortPicks(picks: LeaderboardData['standings'][0]['picks']) {
+  return [...picks].sort((a, b) => {
+    const aHasScore = a.total_score != null;
+    const bHasScore = b.total_score != null;
     // Golfers without scores go to the end, sorted alphabetically
-    if (aScore == null && bScore == null) return a.player_name.localeCompare(b.player_name);
-    if (aScore == null) return 1;
-    if (bScore == null) return -1;
-    return aScore - bScore;
-  });
-
-  // Recalculate counted/dropped using effective scores
-  let countedSoFar = 0;
-  return sorted.map((pick) => {
-    const isMissedCut = pick.status === 'cut' || pick.status === 'wd' || pick.status === 'dq';
-    const hasScore = effectiveScore(pick.total_score, pick.thru) != null;
-    const shouldCount = !isMissedCut && hasScore && countedSoFar < countedScores;
-    if (shouldCount) countedSoFar++;
-    return {
-      ...pick,
-      counts_toward_total: shouldCount,
-      is_dropped: !isMissedCut && hasScore && !shouldCount,
-    };
+    if (!aHasScore && !bHasScore) return a.player_name.localeCompare(b.player_name);
+    if (!aHasScore) return 1;
+    if (!bHasScore) return -1;
+    return a.total_score! - b.total_score!;
   });
 }
 
@@ -69,7 +55,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
               const rankDisplay = standing.rank != null
                 ? `${standing.is_tied ? 'T' : ''}${standing.rank}`
                 : '-';
-              const sortedPicks = sortAndMarkPicks(standing.picks, clubConfig.countedScores);
+              const sortedPicks = sortPicks(standing.picks);
 
               return (
                 <tr
