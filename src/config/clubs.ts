@@ -13,7 +13,7 @@ export const CLUB_CONFIGS: Record<ClubCode, ClubConfig> = {
     cutMinimum: 5,
     countedScores: 5,
     useBuckets: false,
-    allowSelfServiceEntry: true,
+    allowSelfServiceEntry: false,
     maxEntriesPerEmail: 3,
     rulesDescription: [
       'Pick any 7 golfers from the field.',
