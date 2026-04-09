@@ -21,10 +21,10 @@ describe('Header', () => {
     expect(screen.getByText('RVCC Masters Pool')).toBeInTheDocument();
   });
 
-  it('renders nav links with correct paths for RVCC', () => {
+  it('renders nav links with correct paths for RVCC (entries closed)', () => {
     renderHeader(rvccConfig);
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Enter' })).toHaveAttribute('href', '/entry');
+    expect(screen.queryByRole('link', { name: 'Enter' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute('href', '/leaderboard');
     expect(screen.getByRole('link', { name: 'My Entries' })).toHaveAttribute('href', '/lookup');
   });

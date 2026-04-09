@@ -55,9 +55,9 @@ describe('HomePage', () => {
     expect(await screen.findByText(/Entry deadline:/i)).toBeInTheDocument();
   });
 
-  it('renders Submit Entry link after loading', async () => {
+  it('renders View Leaderboard link after loading (entries closed)', async () => {
     renderHomePage();
-    expect(await screen.findByRole('link', { name: /Submit Entry/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /View Leaderboard/i })).toBeInTheDocument();
   });
 
   it('renders My Entries link after loading', async () => {
