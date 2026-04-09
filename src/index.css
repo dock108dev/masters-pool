@@ -917,34 +917,33 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  width: 100%;
 }
 
 .golfer-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .golfer-name {
+  display: block;
   font-weight: 600;
   font-size: 0.78rem;
   line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .golfer-thru {
+  display: block;
   font-size: 0.7rem;
   color: var(--color-text-muted);
   margin-top: 1px;
 }
 
 .golfer-total {
+  flex: 0 0 auto;
   font-weight: 700;
   font-size: 0.82rem;
   white-space: nowrap;
-  margin-left: auto;
+  text-align: right;
 }
 
 .golfer-counted .golfer-name {
