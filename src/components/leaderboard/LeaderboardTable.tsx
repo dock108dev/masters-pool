@@ -10,13 +10,19 @@ interface LeaderboardTableProps {
 
 function sortPicks(picks: LeaderboardData['standings'][0]['picks']) {
   return [...picks].sort((a, b) => {
-    const aHasScore = a.total_score != null;
-    const bHasScore = b.total_score != null;
-    // Golfers without scores go to the end, sorted alphabetically
-    if (!aHasScore && !bHasScore) return a.player_name.localeCompare(b.player_name);
-    if (!aHasScore) return 1;
-    if (!bHasScore) return -1;
-    return a.total_score! - b.total_score!;
+    // Players counting toward the total come first (active, not dropped)
+    if (a.counts_toward_total !== b.counts_toward_total) {
+      return a.counts_toward_total ? -1 : 1;
+    }
+    // Among remaining, active players before cut/wd/dq
+    const aActive = a.status === 'active';
+    const bActive = b.status === 'active';
+    if (aActive !== bActive) return aActive ? -1 : 1;
+    // Within each group, sort by score (lowest first)
+    const aScore = a.total_score ?? 999;
+    const bScore = b.total_score ?? 999;
+    if (aScore !== bScore) return aScore - bScore;
+    return a.player_name.localeCompare(b.player_name);
   });
 }
 
