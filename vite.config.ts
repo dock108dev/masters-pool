@@ -9,7 +9,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: process.env.SPORTS_API_URL ?? 'https://sports-data-admin.dock108.ai',
+        target: process.env.SPORTS_API_URL ?? 'https://sda.dock108.dev',
         changeOrigin: true,
         secure: true,
         headers: {
