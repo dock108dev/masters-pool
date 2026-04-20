@@ -1,414 +1,419 @@
-club_pool_app_v1_controlled_braindump.md
+# Masters Pool → Platform (Next Phase Braindump)
 
-⸻
+## Context (Where We Are)
 
-🎯 Core Objective
+- Currently running ~2 pools manually
+- Charging ~$100 per pool
+- Everything flows through me:
+  - onboarding
+  - fixing entries
+  - validating picks
+  - scoring sanity checks
+  - answering questions
 
-Scale from:
+It works because:
+- volume is low
+- people trust me
+- I can manually patch issues
 
-* 1 manually run pool
+This does NOT scale.
 
-To:
+---
 
-* 5–15 concurrent club pools
-* minimal intervention during event
-* zero scoring errors
-* minimal “where do I click” questions
+## Goal (What This Needs To Become)
 
-⸻
-
-🧠 Product Definition (locked)
+Not a golf app. Not fantasy.
 
 This is:
 
-a hosted, per-club pool system with:
+> **A self-serve private pool hosting platform**
 
-* simple entry UX
-* accurate scoring
-* clean leaderboard
+Clubs:
+- create their own pools
+- configure formats
+- send links
+- never need me
 
-This is NOT:
+I:
+- provide infrastructure
+- ensure scoring is correct
+- stay out of the way
 
-* a platform
-* a marketplace
-* self-serve onboarding
-* generalized system (yet)
+---
 
-⸻
+## Hard Reality
 
-🔑 Constraints (important, don’t break these)
+Going from 2 → 40 clubs is NOT:
+- “just more users”
 
-* You onboard every club manually
-* You control pool creation
-* You can fix things live
-* UI must not confuse non-technical users
-* Backend correctness > frontend polish
+It is:
+- removing myself from every critical path
+- building guardrails so users can’t break things
+- making the system deterministic and trustable
 
-⸻
+If I don’t:
+- I become support
+- I become QA
+- I become the bottleneck
 
-🧩 Supported Formats (locked for v1)
+---
 
-1. Bucket Format (CSV + optional UI later)
+## What Breaks First (In Order)
 
-* 6 buckets
-* 1 pick per bucket
-* need 4 to make cut
-* all 6 count (or configurable but default this)
+### 1. Onboarding
 
-2. Pick X of Y
+Right now:
+- I fix bad inputs
+- I explain formats
+- I probably touch every pool
 
-* pick 7
-* best 5 count
-* 5 must make cut
+At scale:
+- this becomes 70% of time
 
-⸻
+Fix:
+- self-serve pool creation
+- strict validation
+- no invalid states allowed
 
-🖥️ Frontend Focus (this is where scaling happens)
+---
 
-1. Entry Page (highest priority)
+### 2. Entries (CSV is a trap)
 
-Must:
+Current:
+- CSV upload works but is fragile
+- easy to mess up formatting
+- hard to validate edge cases
 
-* load fast
-* be mobile-first
-* require zero explanation
+At scale:
+- this WILL break constantly
 
-Flow:
+Fix:
+- UI-first entry system
+- CSV only if validated BEFORE submission
+- preview + confirm step required
 
-1. open link
-2. enter name
-3. pick players
-4. submit
-5. confirmation
+---
 
-⸻
+### 3. Scoring Trust
 
-UX Rules (strict)
-
-* No scrolling through 150 players blindly → grouping/search required
-* Show:
-    * selected count (e.g. “3/7 selected”)
-* Prevent:
-    * invalid submission
-* Lock:
-    * after submission (no edits for v1)
-
-⸻
-
-Bucket UX
-
-* display buckets clearly:
-    * “Bucket A”, “Bucket B”… or real labels
-* show:
-    * selected player per bucket
-* prevent:
-    * multiple picks per bucket
-
-⸻
-
-Pick X UX
-
-* full player list
-* tap to select/deselect
-* sticky counter (top or bottom)
-
-⸻
-
-📊 Leaderboard (second highest priority)
-
-This is what people actually watch.
-
-Must be:
-
-* clean
-* fast
-* readable at a glance
-
-⸻
-
-Required Fields
-
-* rank
-* entry name
-* total score
-* players
-* status:
-    * active
-    * cut
-
-⸻
-
-Visual Signals (important)
-
-* highlight:
-    * players who made cut
-    * players who missed
-* show:
-    * how many count toward score
-
-⸻
-
-Performance Requirement
-
-* must load instantly
-* must not lag under:
-    * ~100–300 entries per pool
-
-⸻
-
-🧑‍💼 Club Pro Experience (minimal but necessary)
-
-You are onboarding → keep this thin.
-
-⸻
-
-Login (simple)
-
-* email + password OR magic link
-* no signup flow
-* you create accounts
-
-⸻
-
-Dashboard
-
-For each club:
-
-* list of pools
-* links:
-    * entry page
-    * leaderboard
-* maybe:
-    * entry count
-
-⸻
-
-No advanced features yet
-
-* no editing pools
-* no complex controls
-* no analytics
-
-⸻
-
-🛠️ Operational Reality (this is where you win or lose)
-
-You will:
-
-* create pools manually
-* configure rules
-* validate players
-* test before sending link
-
-⸻
-
-Pre-Event Checklist (you need this mentally)
-
-For each pool:
-
-* players loaded correctly
-* rules correct
-* entry link tested
-* leaderboard empty + working
-* lock time verified
-
-⸻
-
-⚙️ Backend Requirements (DOCUMENT ONLY — DO NOT BUILD YET)
-
-This is the most important section long term.
-
-⸻
-
-1. Scoring Engine (critical)
-
-Must handle:
-
-* per-player score
-* cut status
-* aggregation rules:
-    * best N scores
-    * minimum players making cut
-
-Must be:
-
-* deterministic
-* re-runnable
-
-⸻
-
-2. Data Sync
-
-Need:
-
-* player list (pre-event)
-* scores (during + post cut)
+If scoring is wrong once:
+- product is dead
 
 Requirements:
+- deterministic
+- reproducible
+- locked rules
 
-* consistent IDs for players
-* no duplication
-* no stale data
+Fix:
+- scoring engine = single source of truth
+- no “manual adjustments”
+- full recompute always possible
 
-⸻
+---
 
-3. Recompute Ability (this is huge)
+### 4. Locking + Timing
 
-You MUST be able to:
+Golf is sensitive to:
+- tee times
+- cut rules
+- late entries
 
-* recompute all scores for a pool
+If this is fuzzy:
+- people complain immediately
 
-Because:
+Fix:
+- hard lock at first tee
+- timestamps on all entries
+- no edits after lock
+- visible to users
 
-* data will be wrong at some point
-* rules might change
-* fixes must be instant
+---
 
-⸻
+### 5. Support Explosion
 
-4. Entry Storage
+40 clubs = hundreds of users
 
-Must store:
+Questions will be:
+- “did my pick save”
+- “why is this guy cut”
+- “this looks wrong”
 
-* entry name
-* picks
-* timestamp
+Fix:
+- UI answers questions before they’re asked
+- audit trail for entries
+- clear states everywhere
+
+---
+
+### 6. Payments (Do Not Touch This)
+
+Important:
+- I should NOT handle money
+
+Clubs:
+- collect money
+- pay out
+
+I:
+- provide standings only
+
+Avoid:
+- legal complexity
+- becoming a bank
+- liability
+
+---
+
+## Core Product Pieces (What Actually Needs To Exist)
+
+### 1. Club Owner System
+
+Each club gets:
+- login
+- dashboard
+- list of pools
+
+They can:
+- create pool
+- manage pool
+- view entries
+
+---
+
+### 2. Pool Creation (Critical Path)
 
 Must be:
+- simple
+- constrained
+- impossible to misconfigure
 
-* immutable after lock
+Formats:
+- bucket picks
+- pick X of Y
 
-⸻
+Config:
+- number of picks
+- cut rules
+- scoring rules
+- entry limits
 
-5. Pool Config
+Output:
+- **locked config object (SSOT)**
+- cannot change after start
 
-Store:
+---
 
-* format type
-* rules
-* lock time
-* player set
+### 3. Entry System
 
-⸻
+Replace:
+- CSV chaos
 
-6. Isolation Between Pools
+With:
+- player picker UI
+- validation before submit
+- confirmation screen
 
-Each pool:
+Rules:
+- no invalid picks
+- no duplicates (if not allowed)
+- no missing slots
 
-* fully independent
-* no shared state issues
+---
 
-Because:
-👉 multiple clubs running at once
+### 4. Scoring Engine (Backend Core)
 
-⸻
+Inputs:
+- tournament data
+- player scores
 
-7. CSV Handling
+Outputs:
+- standings
+- cut status
+- rankings
 
-Must support:
+Requirements:
+- deterministic
+- replayable
+- auditable
 
-* entry import (optional)
-* bucket definition import
+No:
+- manual overrides
+- silent fixes
+
+---
+
+### 5. Standings + Viewing
+
+This is the product.
+
+Users care about:
+- leaderboard
+- who made the cut
+- who is dead
+- where they stand
 
 Needs:
+- clean UI
+- fast updates
+- zero confusion
 
-* flexible parsing
-* error handling
+---
 
-⸻
+## Data Model (SSOT Direction)
 
-⚠️ Failure Modes (these will happen)
+### Pool
+- id
+- club_id
+- format
+- config (locked JSON)
+- start_time
+- lock_time
+- status
 
-1. Bad player matching
+### Entry
+- id
+- pool_id
+- name
+- picks[]
+- created_at
+- locked_at
 
-* CSV names don’t match
-* fix: manual mapping fallback
+### Player Result
+- player_id
+- score
+- cut_status
+- position
 
-⸻
+### Computed Standings
+- entry_id
+- total_score
+- rank
+- status
 
-2. Scoring mismatch
+---
 
-* leaderboard wrong
-* fix: recompute
+## Expansion Strategy (Beyond Masters)
 
-⸻
+Golf majors:
+- [PGA Championship](chatgpt://generic-entity?number=0)  
+- [U.S. Open](chatgpt://generic-entity?number=1)  
+- [The Open Championship](chatgpt://generic-entity?number=2)  
 
-3. Late entries
+Future:
+- March Madness pools
+- NFL survivor
+- weekly pick’em
 
-* someone wants in after lock
-* decision:
-    * either allow manual add
-    * or strict no
+Key idea:
+> pools are the product, golf is just v1
 
-⸻
+---
 
-4. Load spike
+## Pricing (Keep It Simple For Now)
 
-* everyone opens leaderboard at once
-* must not crash
+Current:
+- $100 per pool
 
-⸻
+Keep:
+- flat pricing
 
-5. Confused users
-
-* “did my picks save?”
-* fix: strong confirmation screen
-
-⸻
-
-🧪 Testing Strategy (don’t skip this)
-
-Before event:
-
-* create fake pool
-* submit 10–20 entries
-* simulate:
-    * cut scenarios
-    * scoring variations
+Avoid:
+- per entry (too complex early)
+- tiers (not needed yet)
 
 Goal:
-👉 trust the system before real money is involved
+- easy sell to clubs
+- predictable revenue
 
-⸻
+---
 
-🚀 Scaling Reality (v1 expectations)
+## Biggest Constraint: Me
 
-You can realistically support:
+Right now:
+- I am the system
 
-* 5–10 clubs
-* 50–150 entries each
+That must change.
 
-IF:
+Rules:
+- if I touch it → automate it
+- if it breaks → add validation
+- if users ask → fix UX, not support
 
-* scoring is solid
-* frontend is simple
-* you are available for issues
+---
 
-⸻
+## Minimal Build Plan
 
-❌ What we are NOT doing (guardrails)
+### Phase 1 (Immediate)
+- club login
+- pool creation flow
+- entry UI (no CSV required)
+- basic standings
 
-* no payments
-* no automation onboarding
-* no complex rule builder
-* no notifications system
-* no user accounts for players
-* no editing entries post-submit
+---
 
-⸻
+### Phase 2
+- scoring engine hardening
+- audit logs
+- lock + timing rules
 
-🧠 Final Anchor
+---
 
-This succeeds if:
+### Phase 3
+- multi-tournament support
+- sharing / invites
+- branding per club
 
-* clubs don’t text you constantly
-* leaderboard is trusted
-* entry process is painless
+---
 
-This fails if:
+## Rollout Strategy
 
-* scoring is wrong once
-* users are confused entering picks
-* you have to manually fix everything mid-event
+Do NOT jump to 40 clubs.
 
-⸻
+Instead:
+1. onboard 3–5 more manually
+2. refine product
+3. remove friction
+4. repeat
+
+Target:
+> 8–10 clubs with zero manual intervention
+
+Then scale.
+
+---
+
+## Guardrails (Non-Negotiable)
+
+- scoring must always be correct
+- entries must be validated before save
+- pools must lock correctly
+- configs must be immutable after start
+- system must be explainable to users
+
+---
+
+## The Only Question That Matters
+
+> Can a club run a pool without me touching it once?
+
+If no:
+- nothing else matters yet
+
+---
+
+## Final Thought
+
+This is not a feature problem.
+
+It’s:
+- system design
+- trust
+- removing human dependency
+
+If done right:
+- this spreads naturally
+- this expands across sports
+- this becomes a real product
+
+If not:
+- it stays a side hustle capped by me
