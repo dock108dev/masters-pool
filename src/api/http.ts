@@ -310,14 +310,26 @@ export class HttpApiClient implements ApiClient {
   }
 
   async submitClubClaim(claim: ClubClaim): Promise<ClubClaimResponse> {
-    // TODO: backend endpoint POST /api/onboarding/club-claims does not yet exist.
-    // Expected to accept ClubClaim and return { claim_id, received_at }.
     const res = await fetch(API_ENDPOINTS.clubClaims(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(claim),
     });
-    if (!res.ok) throw new Error(`Failed to submit club claim: ${res.status}`);
+    if (!res.ok) {
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After');
+        const wait = retryAfter ? ` Try again in ${retryAfter}s.` : ' Please try again later.';
+        throw Object.assign(new Error(`Too many requests.${wait}`), { status: 429 });
+      }
+      const body = await res.json().catch(() => null);
+      const detail = body?.detail;
+      const msg = typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail) && detail[0]?.msg
+          ? detail.map((d: { msg: string }) => d.msg).join('; ')
+          : `Failed to submit club claim: ${res.status}`;
+      throw Object.assign(new Error(msg), { status: res.status });
+    }
     return res.json();
   }
 
