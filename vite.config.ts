@@ -2,8 +2,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Strip the `crossorigin` attribute Vite adds to <script>/<link> tags.
+// We serve all assets same-origin through Caddy; CORS headers are not set
+// on the origin, and Safari treats a crossorigin-marked stylesheet without
+// Access-Control-Allow-Origin as a fetch failure, leading to unstyled pages.
+const stripCrossorigin = {
+  name: 'strip-crossorigin',
+  transformIndexHtml(html: string) {
+    return html.replace(/\s+crossorigin(="[^"]*")?/g, '');
+  },
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), stripCrossorigin],
   server: {
     // Allow subdomain access: rvcc.localhost, crestmont.localhost
     host: true,
