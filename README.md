@@ -29,11 +29,12 @@ Routing is **host-based**. The subdomain decides which app renders; paths never 
 
 | Host | Purpose |
 |---|---|
-| `onboard.dock108.dev` | Marketing + "claim your club" form, coordinator sign-up |
-| `admin.dock108.dev` | Platform superadmin dashboard (requires `publicMetadata.role === 'superadmin'`) |
-| `rvcc.dock108.dev` | Raritan Valley CC — public pool + coordinator admin |
-| `crestmont.dock108.dev` | Crestmont CC — public pool + coordinator admin |
-| `dock108.dev` (apex) | 301 redirects to `onboard.dock108.dev` |
+| `countryclubpicks.com` (apex) | Marketing + "claim your club" form |
+| `www.countryclubpicks.com` | 301 → apex |
+| `admin.countryclubpicks.com` | Platform superadmin dashboard (HTTP Basic Auth at Caddy) |
+| `rvcc.countryclubpicks.com` | Raritan Valley CC — public pool; `/admin/*` basic-auth'd |
+| `crestmont.countryclubpicks.com` | Crestmont CC — public pool; `/admin/*` basic-auth'd |
+| `*.dock108.dev` (legacy) | 301 to the countryclubpicks equivalents |
 
 Clubs are configured in `src/config/clubs.ts`:
 
@@ -44,26 +45,21 @@ Clubs are configured in `src/config/clubs.ts`:
 
 **Local dev:** vite serves any `*.localhost` hostname thanks to `server.host: true`. Use:
 
-- `onboard.localhost:5173` — onboarding + sign-up
+- `localhost:5173` — apex (onboarding marketing + claim form)
 - `admin.localhost:5173` — superadmin
 - `rvcc.localhost:5173` / `crestmont.localhost:5173` — club apps
 
-Bare `localhost:5173` redirects to `onboard.localhost:5173`.
-
 ### Routes per host
 
-**`onboard.*`**
+**`countryclubpicks.com` (apex)**
 | Path | Auth | Description |
 |---|---|---|
-| `/` | None | Marketing + claim form |
-| `/sign-up` | None | Coordinator sign-up (Clerk) |
-| `/welcome` | None | Post-signup confirmation |
+| `/` | None | Marketing + claim-your-club form |
 
-**`admin.*`**
+**`admin.countryclubpicks.com`**
 | Path | Auth | Description |
 |---|---|---|
-| `/sign-in` | None | Superadmin sign-in (Clerk) |
-| `/` | `superadmin` | Platform ops dashboard |
+| `/` | Basic Auth (Caddy) | Platform ops dashboard |
 
 **`rvcc.*` / `crestmont.*` (club)**
 | Path | Auth | Description |
@@ -75,11 +71,10 @@ Bare `localhost:5173` redirects to `onboard.localhost:5173`.
 | `/leaderboard/entry/:entryId` | None | Entry detail |
 | `/lookup` | None | Email-based entry lookup |
 | `/enter/:poolToken` | None | Public entry link |
-| `/admin/sign-in` | None | Coordinator sign-in |
-| `/admin` | `org:admin` | Pool listing |
-| `/admin/pools/new` | `org:admin` | Pool creation wizard |
-| `/admin/pools/:poolId` | `org:admin` | Coordinator pool dashboard |
-| `/admin/branding` | `org:admin` | Branding settings |
+| `/admin` | Basic Auth (Caddy) | Pool listing |
+| `/admin/pools/new` | Basic Auth (Caddy) | Pool creation wizard |
+| `/admin/pools/:poolId` | Basic Auth (Caddy) | Coordinator pool dashboard |
+| `/admin/branding` | Basic Auth (Caddy) | Branding settings |
 
 ## Deployment
 

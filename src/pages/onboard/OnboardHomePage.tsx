@@ -175,7 +175,7 @@ export function OnboardHomePage() {
             <h3>Thanks — we got it.</h3>
             <p>
               We'll reach out within a business day. In the meantime, take a tour of a live demo:{' '}
-              <a href="https://rvcc.dock108.dev">rvcc.dock108.dev</a>.
+              <a href="https://rvcc.countryclubpicks.com">rvcc.countryclubpicks.com</a>.
             </p>
           </div>
         ) : (

@@ -5,31 +5,32 @@ export type HostKind =
   | { kind: 'onboard' }
   | { kind: 'admin' }
   | { kind: 'club'; clubCode: ClubCode }
-  | { kind: 'apex' }
   | { kind: 'unknown'; subdomain: string };
+
+const APEX_HOSTS = new Set([
+  'countryclubpicks.com',
+  'www.countryclubpicks.com',
+  // legacy — handled by 301 at the edge, but classify defensively too
+  'dock108.dev',
+  // local dev
+  'localhost',
+  '127.0.0.1',
+]);
 
 /**
  * Classify the current hostname into a routing intent.
- * - onboard.* → onboard (marketing + claim-your-club)
- * - admin.*   → admin (platform superadmin)
- * - <club>.*  → club (club-scoped public + coordinator routes)
- * - bare dock108.dev / localhost → apex (redirect to onboard)
+ * - apex (`countryclubpicks.com`, `www.`, bare `localhost`) → onboard
+ * - `onboard.*` → onboard (legacy + local subdomain dev)
+ * - `admin.*`   → admin (platform superadmin, gated at Caddy layer)
+ * - `<club>.*`  → club (club-scoped public + coordinator routes)
  * - anything else → unknown
  */
 export function classifyHost(hostname = window.location.hostname): HostKind {
-  const parts = hostname.split('.').filter(Boolean);
-  const sub = parts[0]?.toLowerCase() ?? '';
+  if (APEX_HOSTS.has(hostname)) return { kind: 'onboard' };
 
-  // Bare localhost or bare apex domain (no subdomain).
-  // "localhost" by itself is one part; "dock108.dev" is two parts with no leading subdomain.
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return { kind: 'apex' };
-  }
-  if (parts.length <= 2 && !isValidClubCode(sub) && sub !== 'onboard' && sub !== 'admin') {
-    return { kind: 'apex' };
-  }
+  const sub = hostname.split('.')[0]?.toLowerCase() ?? '';
 
-  if (sub === 'onboard') return { kind: 'onboard' };
+  if (sub === 'onboard' || sub === 'www') return { kind: 'onboard' };
   if (sub === 'admin') return { kind: 'admin' };
   if (isValidClubCode(sub)) return { kind: 'club', clubCode: sub };
 

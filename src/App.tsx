@@ -19,19 +19,6 @@ import { OnboardHomePage } from './pages/onboard/OnboardHomePage';
 import { SuperAdminDashboard } from './pages/superadmin/SuperAdminDashboard';
 import { classifyHost, type HostKind } from './config/host';
 
-function ApexRedirect() {
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol;
-    const port = window.location.port ? `:${window.location.port}` : '';
-    const hostname = window.location.hostname;
-    const targetHost = hostname === 'localhost' || hostname === '127.0.0.1'
-      ? 'onboard.localhost'
-      : `onboard.${hostname}`;
-    window.location.replace(`${protocol}//${targetHost}${port}${window.location.pathname}`);
-  }
-  return <div className="main-content"><p>Redirecting…</p></div>;
-}
-
 function UnknownHostPage({ subdomain }: { subdomain: string }) {
   return (
     <div className="main-content" role="alert" data-testid="unknown-host">
@@ -86,8 +73,6 @@ function ClubRoutes() {
 
 function routesForHost(host: HostKind) {
   switch (host.kind) {
-    case 'apex':
-      return <ApexRedirect />;
     case 'onboard':
       return <OnboardRoutes />;
     case 'admin':
