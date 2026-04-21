@@ -1736,3 +1736,308 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================================================
+   Onboard / marketing page
+   ================================================================ */
+
+.marketing-page {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 24px;
+  color: var(--color-text);
+}
+
+.marketing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0 32px;
+  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: 48px;
+}
+
+.marketing-logo {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--color-green);
+  letter-spacing: 0.02em;
+}
+
+.marketing-nav {
+  display: flex;
+  gap: 12px;
+}
+
+.marketing-hero {
+  text-align: center;
+  padding: 48px 16px 64px;
+}
+
+.marketing-hero h1 {
+  font-size: clamp(1.8rem, 4vw, 2.75rem);
+  line-height: 1.15;
+  margin-bottom: 20px;
+  color: var(--color-green-dark);
+}
+
+.marketing-hero-sub {
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  max-width: 640px;
+  margin: 0 auto 32px;
+}
+
+.marketing-start-free {
+  display: inline-block;
+}
+
+.marketing-formats {
+  padding: 48px 0;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.marketing-formats h2,
+.marketing-pricing h2,
+.marketing-claim h2 {
+  font-size: 1.75rem;
+  margin-bottom: 32px;
+  text-align: center;
+  color: var(--color-green-dark);
+}
+
+.format-demos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.format-demo-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.format-demo-card h3 {
+  color: var(--color-green);
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+}
+
+.format-demo-card p {
+  color: var(--color-text-secondary);
+  margin-bottom: 16px;
+}
+
+.format-demo-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.format-demo-card li {
+  padding: 6px 0;
+  color: var(--color-text);
+  position: relative;
+  padding-left: 20px;
+}
+
+.format-demo-card li::before {
+  content: '✓';
+  color: var(--color-gold);
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.marketing-pricing {
+  padding: 48px 0;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.pricing-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.pricing-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-card--highlight {
+  border-color: var(--color-gold);
+  border-width: 2px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.pricing-card--highlight::before {
+  content: 'Recommended';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-gold);
+  color: var(--color-white);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pricing-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+  color: var(--color-green-dark);
+}
+
+.pricing-price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-green);
+  margin: 12px 0 8px;
+}
+
+.pricing-card p {
+  color: var(--color-text-secondary);
+  margin-bottom: 20px;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  text-align: left;
+  flex: 1;
+}
+
+.pricing-features li {
+  padding: 6px 0;
+  padding-left: 22px;
+  position: relative;
+  color: var(--color-text);
+}
+
+.pricing-features li::before {
+  content: '✓';
+  color: var(--color-gold);
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.pricing-cta {
+  width: 100%;
+  margin-top: auto;
+}
+
+.marketing-claim {
+  padding: 48px 0;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.claim-intro {
+  text-align: center;
+  color: var(--color-text-secondary);
+  max-width: 540px;
+  margin: 0 auto 32px;
+}
+
+.claim-form {
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.claim-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.claim-form label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.claim-form input,
+.claim-form textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  transition: border-color var(--transition);
+}
+
+.claim-form input:focus,
+.claim-form textarea:focus {
+  outline: none;
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.12);
+}
+
+.claim-form textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.claim-success {
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--color-green-light);
+  border: 1px solid var(--color-green);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  text-align: center;
+}
+
+.claim-success h3 {
+  color: var(--color-green-dark);
+  margin-bottom: 8px;
+}
+
+.claim-success a {
+  color: var(--color-green);
+  font-weight: 600;
+}
+
+.marketing-footer {
+  text-align: center;
+  padding: 32px 16px;
+  margin-top: 48px;
+  border-top: 1px solid var(--color-border-light);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .marketing-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .marketing-hero {
+    padding: 24px 8px 32px;
+  }
+}
