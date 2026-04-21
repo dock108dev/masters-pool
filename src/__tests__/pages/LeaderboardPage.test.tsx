@@ -17,11 +17,11 @@ vi.mock('../../api/client', () => ({
 const rvccConfig = getClubConfig('rvcc');
 const crestmontConfig = getClubConfig('crestmont');
 
-function renderLeaderboardPage(clubConfig = rvccConfig, path = '/rvcc/leaderboard') {
+function renderLeaderboardPage(clubConfig = rvccConfig, path = '/leaderboard') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/:club/leaderboard" element={<LeaderboardPage clubConfig={clubConfig} />} />
+        <Route path="/leaderboard" element={<LeaderboardPage clubConfig={clubConfig} />} />
       </Routes>
     </MemoryRouter>
   );
@@ -53,7 +53,7 @@ describe('LeaderboardPage', () => {
   });
 
   it('shows club short name in heading for Crestmont', async () => {
-    renderLeaderboardPage(crestmontConfig, '/crestmont/leaderboard');
+    renderLeaderboardPage(crestmontConfig, '/leaderboard');
     expect(await screen.findByRole('heading', { name: /Crestmont Leaderboard/i })).toBeInTheDocument();
   });
 
@@ -65,7 +65,7 @@ describe('LeaderboardPage', () => {
   });
 
   it('renders Crestmont leaderboard entry names', async () => {
-    renderLeaderboardPage(crestmontConfig, '/crestmont/leaderboard');
+    renderLeaderboardPage(crestmontConfig, '/leaderboard');
     expect(await screen.findByText('Alice Johnson')).toBeInTheDocument();
   });
 

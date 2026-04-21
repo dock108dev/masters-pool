@@ -1,5 +1,5 @@
 import type { ApiClient } from '../types';
-import type { ClubCode, EntrySubmissionRequest, PoolEvent, CreatePoolRequest, ClubBranding, ClubBilling } from '../../types/domain';
+import type { ClubCode, EntrySubmissionRequest, PoolEvent, CreatePoolRequest, ClubBranding, ClubBilling, ClubClaim, ClubClaimResponse } from '../../types/domain';
 import {
   MOCK_RVCC_POOL,
   MOCK_CRESTMONT_POOL,
@@ -237,6 +237,14 @@ export class MockApiClient implements ApiClient {
     return {
       ...MOCK_ADMIN_POLL_HEALTH,
       tournaments: MOCK_ADMIN_POLL_HEALTH.tournaments.map((t) => ({ ...t })),
+    };
+  }
+
+  async submitClubClaim(_claim: ClubClaim): Promise<ClubClaimResponse> {
+    await delay(this.latencyMs);
+    return {
+      claim_id: `claim_${Date.now().toString(36)}`,
+      received_at: new Date().toISOString(),
     };
   }
 

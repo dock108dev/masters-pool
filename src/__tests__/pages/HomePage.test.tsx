@@ -12,11 +12,11 @@ vi.mock('../../api/client', () => ({
 const rvccConfig = getClubConfig('rvcc');
 const crestmontConfig = getClubConfig('crestmont');
 
-function renderHomePage(clubConfig = rvccConfig, path = '/rvcc') {
+function renderHomePage(clubConfig = rvccConfig, path = '/') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/:club" element={<HomePage clubConfig={clubConfig} />} />
+        <Route path="/" element={<HomePage clubConfig={clubConfig} />} />
       </Routes>
     </MemoryRouter>
   );
@@ -34,7 +34,7 @@ describe('HomePage', () => {
   });
 
   it('renders Crestmont club name in heading', async () => {
-    renderHomePage(crestmontConfig, '/crestmont');
+    renderHomePage(crestmontConfig, '/');
     expect(await screen.findByRole('heading', { name: /Crestmont Masters Pool/i })).toBeInTheDocument();
   });
 
@@ -73,7 +73,7 @@ describe('HomePage', () => {
   });
 
   it('shows Crestmont pool name after loading', async () => {
-    renderHomePage(crestmontConfig, '/crestmont');
+    renderHomePage(crestmontConfig, '/');
     expect(await screen.findByText(/The Masters 2026 - Crestmont Pool/i)).toBeInTheDocument();
   });
 });

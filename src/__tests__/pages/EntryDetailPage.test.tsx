@@ -17,13 +17,13 @@ vi.mock('../../api/client', () => ({
 
 const rvccConfig = getClubConfig('rvcc');
 
-function renderDetailPage(entryId: string | number, clubCode = 'rvcc') {
-  const path = `/${clubCode}/leaderboard/entry/${entryId}`;
+function renderDetailPage(entryId: string | number) {
+  const path = `/leaderboard/entry/${entryId}`;
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route
-          path="/:clubCode/leaderboard/entry/:entryId"
+          path="/leaderboard/entry/:entryId"
           element={<EntryDetailPage clubConfig={rvccConfig} />}
         />
       </Routes>
@@ -96,7 +96,7 @@ describe('EntryDetailPage', () => {
     await screen.findByRole('heading', { name: 'John Smith' });
     const backLink = screen.getByRole('link', { name: /back to leaderboard/i });
     expect(backLink).toBeInTheDocument();
-    expect(backLink).toHaveAttribute('href', '/rvcc/leaderboard');
+    expect(backLink).toHaveAttribute('href', '/leaderboard');
   });
 
   // Acceptance criteria: entry with WD golfer renders WD badge and shows penalty in breakdown
@@ -166,15 +166,15 @@ describe('LeaderboardTable entry links', () => {
   it('leaderboard rows link to the entry detail page', async () => {
     const { LeaderboardPage } = await import('../../pages/LeaderboardPage');
     render(
-      <MemoryRouter initialEntries={['/rvcc/leaderboard']}>
+      <MemoryRouter initialEntries={['/leaderboard']}>
         <Routes>
-          <Route path="/:club/leaderboard" element={<LeaderboardPage clubConfig={rvccConfig} />} />
+          <Route path="/leaderboard" element={<LeaderboardPage clubConfig={rvccConfig} />} />
         </Routes>
       </MemoryRouter>,
     );
 
     await screen.findByTestId('leaderboard-table');
     const johnLink = screen.getByRole('link', { name: 'John Smith' });
-    expect(johnLink).toHaveAttribute('href', '/rvcc/leaderboard/entry/1');
+    expect(johnLink).toHaveAttribute('href', '/leaderboard/entry/1');
   });
 });

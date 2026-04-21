@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv /Users/michaelfuscoletti/.claude/plans/sports-data-admin-club-claims-endpoint.md /Users/michaelfuscoletti/Desktop/sports-data-admin/club-claims-endpoint-plan.md)",
+      "Read(//Users/michaelfuscoletti/Desktop/sports-data-admin/**)"
+    ]
+  }
+}

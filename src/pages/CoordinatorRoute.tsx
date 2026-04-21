@@ -19,10 +19,8 @@ export function CoordinatorRoute({ children }: CoordinatorRouteProps) {
   }
 
   if (!isSignedIn) {
-    // Derive sign-in URL by replacing /admin/... with /admin/sign-in, preserving return path
-    const signInPath = location.pathname.replace(/\/admin(\/.*)?$/, '/admin/sign-in');
     return (
-      <Navigate to={signInPath} state={{ returnTo: location.pathname }} replace />
+      <Navigate to="/admin/sign-in" state={{ returnTo: location.pathname }} replace />
     );
   }
 

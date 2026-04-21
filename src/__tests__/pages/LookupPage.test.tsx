@@ -15,9 +15,9 @@ const rvccConfig = getClubConfig('rvcc');
 
 function renderLookupPage(clubConfig = rvccConfig) {
   return render(
-    <MemoryRouter initialEntries={['/rvcc/lookup']}>
+    <MemoryRouter initialEntries={['/lookup']}>
       <Routes>
-        <Route path="/:club/lookup" element={<LookupPage clubConfig={clubConfig} />} />
+        <Route path="/lookup" element={<LookupPage clubConfig={clubConfig} />} />
       </Routes>
     </MemoryRouter>
   );

@@ -62,10 +62,7 @@ export function ClubRoot() {
       {isAdminPath && (
         <SignedOut>
           <div className="coordinator-signin-bar" data-testid="coordinator-signin-bar">
-            <Link
-              to={`/${clubConfig.code}/admin/sign-in`}
-              className="coordinator-signin-link"
-            >
+            <Link to="/admin/sign-in" className="coordinator-signin-link">
               Coordinator sign-in
             </Link>
           </div>

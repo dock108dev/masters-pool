@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import type { ClubCode, ClubConfig, PoolEvent, BillingStatus } from '../types/domain';
+import type { ClubConfig, PoolEvent, BillingStatus } from '../types/domain';
 import { useApi } from '../hooks/useApi';
 import { apiClient } from '../api/client';
 import { LoadingState } from '../components/common/LoadingState';
@@ -31,7 +31,8 @@ interface CoordinatorDashboardPageProps {
 }
 
 export function CoordinatorDashboardPage({ clubConfig }: CoordinatorDashboardPageProps) {
-  const { poolId, clubCode } = useParams<{ poolId: string; clubCode: string }>();
+  const { poolId } = useParams<{ poolId: string }>();
+  const clubCode = clubConfig.code;
   const id = Number(poolId);
 
   const { data: pool, loading: poolLoading, error: poolError } = useApi(
@@ -47,11 +48,11 @@ export function CoordinatorDashboardPage({ clubConfig }: CoordinatorDashboardPag
     [id],
   );
   const { data: billing } = useApi(
-    () => apiClient.getClubBilling(clubCode as ClubCode),
+    () => apiClient.getClubBilling(clubCode),
     [clubCode],
   );
   const { data: referral } = useApi(
-    () => apiClient.getReferralInfo(clubCode as ClubCode),
+    () => apiClient.getReferralInfo(clubCode),
     [clubCode],
   );
 
@@ -63,7 +64,7 @@ export function CoordinatorDashboardPage({ clubConfig }: CoordinatorDashboardPag
   const reversedEvents = eventsData ? [...eventsData.events].reverse() : [];
 
   function handleManageBilling() {
-    apiClient.createBillingPortalSession(clubCode as ClubCode).then(({ url }) => {
+    apiClient.createBillingPortalSession(clubCode).then(({ url }) => {
       window.open(url, '_blank', 'noopener,noreferrer');
     }).catch(() => {
       // portal session errors are non-critical

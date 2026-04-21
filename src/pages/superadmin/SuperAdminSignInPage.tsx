@@ -1,14 +1,14 @@
 import { SignIn } from '@clerk/clerk-react';
 import { useLocation } from 'react-router-dom';
 
-export function AdminSignInPage() {
+export function SuperAdminSignInPage() {
   const location = useLocation();
   const returnTo =
-    (location.state as { returnTo?: string } | null)?.returnTo ?? '/admin';
+    (location.state as { returnTo?: string } | null)?.returnTo ?? '/';
 
   return (
-    <div className="main-content admin-sign-in">
-      <h1>Coordinator Sign In</h1>
+    <div className="main-content admin-sign-in" data-testid="superadmin-sign-in">
+      <h1>Platform Admin Sign In</h1>
       <SignIn afterSignInUrl={returnTo} redirectUrl={returnTo} />
     </div>
   );

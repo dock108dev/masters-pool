@@ -40,7 +40,7 @@ function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/:clubCode/*" element={<ClubRoot />} />
+        <Route path="/*" element={<ClubRoot />} />
       </Routes>
     </MemoryRouter>
   );
@@ -58,24 +58,24 @@ describe('ClubRoot', () => {
     vi.useRealTimers();
   });
   it('does not show coordinator sign-in link on public routes', () => {
-    renderAt('/rvcc/leaderboard');
+    renderAt('/leaderboard');
     expect(screen.queryByTestId('coordinator-signin-bar')).not.toBeInTheDocument();
   });
 
   it('shows coordinator sign-in link on admin paths', () => {
-    renderAt('/rvcc/admin');
+    renderAt('/admin');
     expect(screen.getByTestId('coordinator-signin-bar')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /coordinator sign-in/i })).toBeInTheDocument();
   });
 
   it('coordinator sign-in link points to admin/sign-in path', () => {
-    renderAt('/rvcc/admin');
+    renderAt('/admin');
     const link = screen.getByRole('link', { name: /coordinator sign-in/i });
-    expect(link).toHaveAttribute('href', '/rvcc/admin/sign-in');
+    expect(link).toHaveAttribute('href', '/admin/sign-in');
   });
 
   it('does not show coordinator sign-in link on root path', () => {
-    renderAt('/rvcc');
+    renderAt('/');
     expect(screen.queryByTestId('coordinator-signin-bar')).not.toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe('ClubRoot', () => {
         primary_color: '#123456',
         accent_color: null,
       });
-      renderAt('/rvcc/leaderboard');
+      renderAt('/leaderboard');
       await waitFor(() => {
         expect(document.documentElement.style.getPropertyValue('--club-primary')).toBe('#123456');
       });
@@ -101,7 +101,7 @@ describe('ClubRoot', () => {
     it('applies default colors when branding fetch fails', async () => {
       vi.useRealTimers();
       vi.spyOn(activeClient, 'getClubBranding').mockRejectedValue(new Error('not found'));
-      renderAt('/rvcc/leaderboard');
+      renderAt('/leaderboard');
       await waitFor(() => {
         expect(document.documentElement.style.getPropertyValue('--club-primary')).toBe('#1e3a5f');
         expect(document.documentElement.style.getPropertyValue('--club-accent')).toBe('#c9a84c');

@@ -96,7 +96,7 @@ export function EntryDetailPage({ clubConfig }: EntryDetailPageProps) {
 
   return (
     <div className="page entry-detail-page">
-      <Link to={`/${clubConfig.code}/leaderboard`} className="entry-detail-back">
+      <Link to="/leaderboard" className="entry-detail-back">
         ← Back to Leaderboard
       </Link>
 

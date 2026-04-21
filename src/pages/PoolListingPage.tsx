@@ -1,5 +1,5 @@
-import { useNavigate, useParams } from 'react-router-dom';
-import type { ClubCode, ClubConfig, PoolStatus } from '../types/domain';
+import { useNavigate } from 'react-router-dom';
+import type { ClubConfig, PoolStatus } from '../types/domain';
 import { useApi } from '../hooks/useApi';
 import { apiClient } from '../api/client';
 import { LoadingState } from '../components/common/LoadingState';
@@ -29,23 +29,22 @@ interface PoolListingPageProps {
 }
 
 export function PoolListingPage({ clubConfig }: PoolListingPageProps) {
-  const { clubCode } = useParams<{ clubCode: string }>();
   const navigate = useNavigate();
 
   const { data: pools, loading, error } = useApi(
-    () => apiClient.getClubPools(clubCode as ClubCode),
-    [clubCode],
+    () => apiClient.getClubPools(clubConfig.code),
+    [clubConfig.code],
   );
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} />;
 
   function handleCreatePool() {
-    navigate(`/${clubCode}/admin/pools/new`);
+    navigate('/admin/pools/new');
   }
 
   function handlePoolClick(poolId: number) {
-    navigate(`/${clubCode}/admin/pools/${poolId}`);
+    navigate(`/admin/pools/${poolId}`);
   }
 
   return (

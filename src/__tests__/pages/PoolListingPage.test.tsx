@@ -25,15 +25,15 @@ vi.mock('../../api/client', () => ({
 const rvccConfig = getClubConfig('rvcc');
 const crestmontConfig = getClubConfig('crestmont');
 
-function renderPoolListing(clubCode = 'rvcc', config = rvccConfig) {
+function renderPoolListing(_clubCode = 'rvcc', config = rvccConfig) {
   return render(
-    <MemoryRouter initialEntries={[`/${clubCode}/admin/pools`]}>
+    <MemoryRouter initialEntries={['/admin/pools']}>
       <Routes>
-        <Route path="/:clubCode/admin/sign-in" element={<div>Sign In Page</div>} />
-        <Route path="/:clubCode/admin/pools/new" element={<div data-testid="wizard-page">Pool Wizard</div>} />
-        <Route path="/:clubCode/admin/pools/:poolId" element={<div data-testid="dashboard-page">Dashboard</div>} />
+        <Route path="/admin/sign-in" element={<div>Sign In Page</div>} />
+        <Route path="/admin/pools/new" element={<div data-testid="wizard-page">Pool Wizard</div>} />
+        <Route path="/admin/pools/:poolId" element={<div data-testid="dashboard-page">Dashboard</div>} />
         <Route
-          path="/:clubCode/admin/pools"
+          path="/admin/pools"
           element={
             <CoordinatorRoute>
               <PoolListingPage clubConfig={config} />

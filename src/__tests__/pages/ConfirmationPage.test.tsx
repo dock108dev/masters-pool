@@ -21,7 +21,7 @@ const mockConfirmation: EntrySubmissionResponse = {
 };
 
 function renderConfirmationPage(state?: { confirmation?: EntrySubmissionResponse }) {
-  const initialPath = '/rvcc/confirmation';
+  const initialPath = '/confirmation';
   const initialEntries = state !== undefined
     ? [{ pathname: initialPath, state }]
     : [initialPath];
@@ -29,9 +29,9 @@ function renderConfirmationPage(state?: { confirmation?: EntrySubmissionResponse
   return render(
     <MemoryRouter initialEntries={initialEntries}>
       <Routes>
-        <Route path="/:club/confirmation" element={<ConfirmationPage clubConfig={rvccConfig} />} />
-        <Route path="/:club/entry" element={<div data-testid="entry-page">Entry Page</div>} />
-        <Route path="/:club/leaderboard" element={<div data-testid="leaderboard-page">Leaderboard</div>} />
+        <Route path="/confirmation" element={<ConfirmationPage clubConfig={rvccConfig} />} />
+        <Route path="/entry" element={<div data-testid="entry-page">Entry Page</div>} />
+        <Route path="/leaderboard" element={<div data-testid="leaderboard-page">Leaderboard</div>} />
       </Routes>
     </MemoryRouter>
   );

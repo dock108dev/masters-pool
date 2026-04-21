@@ -6,15 +6,15 @@ interface PublicConfirmationPageProps {
 }
 
 export function PublicConfirmationPage({ clubConfig: _clubConfig }: PublicConfirmationPageProps) {
-  const { clubCode, poolToken } = useParams<{ clubCode: string; poolToken: string }>();
+  const { poolToken } = useParams<{ poolToken: string }>();
   const location = useLocation();
   const confirmation = (
     location.state as { confirmation?: EntrySubmissionResponse } | null
   )?.confirmation;
 
   const entryUrl =
-    typeof window !== 'undefined' && clubCode && poolToken
-      ? `${window.location.origin}/${clubCode}/enter/${poolToken}`
+    typeof window !== 'undefined' && poolToken
+      ? `${window.location.origin}/enter/${poolToken}`
       : null;
 
   if (!confirmation) {
@@ -22,7 +22,11 @@ export function PublicConfirmationPage({ clubConfig: _clubConfig }: PublicConfir
       <div className="page confirmation-page">
         <h1>No Confirmation Found</h1>
         <p>It looks like you arrived here without submitting an entry.</p>
-        {entryUrl && <Link to={`/${clubCode}/enter/${poolToken}`} className="btn btn-primary">Submit an Entry</Link>}
+        {entryUrl && (
+          <Link to={`/enter/${poolToken}`} className="btn btn-primary">
+            Submit an Entry
+          </Link>
+        )}
       </div>
     );
   }
@@ -56,9 +60,11 @@ export function PublicConfirmationPage({ clubConfig: _clubConfig }: PublicConfir
         </div>
       )}
       <div className="confirmation-actions">
-        <Link to={`/${clubCode}/leaderboard`} className="btn btn-primary">View Leaderboard</Link>
+        <Link to="/leaderboard" className="btn btn-primary">View Leaderboard</Link>
         {entryUrl && (
-          <Link to={`/${clubCode}/enter/${poolToken}`} className="btn btn-secondary">Submit Another Entry</Link>
+          <Link to={`/enter/${poolToken}`} className="btn btn-secondary">
+            Submit Another Entry
+          </Link>
         )}
       </div>
     </div>

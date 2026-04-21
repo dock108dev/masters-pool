@@ -27,10 +27,10 @@ const rvccConfig = getClubConfig('rvcc');
 
 function renderDashboard(poolId = 1) {
   return render(
-    <MemoryRouter initialEntries={[`/rvcc/admin/pools/${poolId}`]}>
+    <MemoryRouter initialEntries={[`/admin/pools/${poolId}`]}>
       <Routes>
         <Route
-          path="/:clubCode/admin/pools/:poolId"
+          path="/admin/pools/:poolId"
           element={<CoordinatorDashboardPage clubConfig={rvccConfig} />}
         />
       </Routes>
@@ -177,10 +177,10 @@ describe('CoordinatorDashboardPage — billing section', () => {
 
   it('shows billing section with Active badge and next invoice date for Crestmont', async () => {
     render(
-      <MemoryRouter initialEntries={['/crestmont/admin/pools/2']}>
+      <MemoryRouter initialEntries={['/admin/pools/2']}>
         <Routes>
           <Route
-            path="/:clubCode/admin/pools/:poolId"
+            path="/admin/pools/:poolId"
             element={<CoordinatorDashboardPage clubConfig={getClubConfig('crestmont')} />}
           />
         </Routes>
@@ -203,10 +203,10 @@ describe('CoordinatorDashboardPage — billing section', () => {
 
   it('opens billing portal when Manage billing is clicked', async () => {
     render(
-      <MemoryRouter initialEntries={['/crestmont/admin/pools/2']}>
+      <MemoryRouter initialEntries={['/admin/pools/2']}>
         <Routes>
           <Route
-            path="/:clubCode/admin/pools/:poolId"
+            path="/admin/pools/:poolId"
             element={<CoordinatorDashboardPage clubConfig={getClubConfig('crestmont')} />}
           />
         </Routes>
@@ -248,11 +248,11 @@ describe('CoordinatorDashboardPage — access control', () => {
     } as ReturnType<typeof useAuth>);
 
     render(
-      <MemoryRouter initialEntries={['/rvcc/admin/pools/1']}>
+      <MemoryRouter initialEntries={['/admin/pools/1']}>
         <Routes>
-          <Route path="/:clubCode/admin/sign-in" element={<div>Sign In</div>} />
+          <Route path="/admin/sign-in" element={<div>Sign In</div>} />
           <Route
-            path="/:clubCode/admin/pools/:poolId"
+            path="/admin/pools/:poolId"
             element={
               <CoordinatorRoute>
                 <CoordinatorDashboardPage clubConfig={rvccConfig} />

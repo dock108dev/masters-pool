@@ -156,7 +156,7 @@ export function PublicEntryPage({ clubConfig }: PublicEntryPageProps) {
         picks,
       });
 
-      navigate(`/${clubConfig.code}/enter/${poolToken}/confirmation`, {
+      navigate(`/enter/${poolToken}/confirmation`, {
         state: { confirmation: response, poolToken },
       });
     } catch (err) {

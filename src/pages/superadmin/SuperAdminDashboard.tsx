@@ -1,6 +1,6 @@
-import { apiClient } from '../api/client';
-import { useApi } from '../hooks/useApi';
-import type { TournamentPollHealth } from '../types/domain';
+import { apiClient } from '../../api/client';
+import { useApi } from '../../hooks/useApi';
+import type { TournamentPollHealth } from '../../types/domain';
 
 function formatMrr(cents: number): string {
   if (cents === 0) return '$0';
@@ -32,12 +32,11 @@ function PollHealthRow({ entry }: { entry: TournamentPollHealth }) {
   );
 }
 
-export function AdminDashboard() {
-  const {
-    data: stats,
-    loading: statsLoading,
-    error: statsError,
-  } = useApi(() => apiClient.getAdminStats(), []);
+export function SuperAdminDashboard() {
+  const { data: stats, loading: statsLoading, error: statsError } = useApi(
+    () => apiClient.getAdminStats(),
+    [],
+  );
 
   const { data: pollHealth, loading: pollLoading } = useApi(
     () => apiClient.getPollHealth(),
@@ -46,8 +45,8 @@ export function AdminDashboard() {
   );
 
   return (
-    <div className="main-content" data-testid="admin-dashboard">
-      <h1>Operations Dashboard</h1>
+    <div className="main-content" data-testid="superadmin-dashboard">
+      <h1>Platform Operations</h1>
 
       {statsError && (
         <div className="error-banner" role="alert">
@@ -81,12 +80,8 @@ export function AdminDashboard() {
       <section className="admin-poll-health" aria-label="Data poll health">
         <h2>Data Poll Health</h2>
         {pollLoading && !pollHealth && <p>Checking poll status…</p>}
-        {pollHealth && pollHealth.tournaments.length === 0 && (
-          <p>No active tournaments.</p>
-        )}
-        {pollHealth?.tournaments.map((t) => (
-          <PollHealthRow key={t.pool_id} entry={t} />
-        ))}
+        {pollHealth && pollHealth.tournaments.length === 0 && <p>No active tournaments.</p>}
+        {pollHealth?.tournaments.map((t) => <PollHealthRow key={t.pool_id} entry={t} />)}
         {pollHealth && (
           <p className="poll-health-checked-at">
             Checked at: {formatTimestamp(pollHealth.checked_at)}

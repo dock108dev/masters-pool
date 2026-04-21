@@ -17,6 +17,8 @@ import type {
   ReferralCreditResponse,
   AdminStats,
   AdminPollHealth,
+  ClubClaim,
+  ClubClaimResponse,
 } from '../types/domain';
 
 export interface ApiClient {
@@ -42,6 +44,7 @@ export interface ApiClient {
   applyReferralCredit(referralCode: string, referredClubCode: ClubCode): Promise<ReferralCreditResponse>;
   getAdminStats(): Promise<AdminStats>;
   getPollHealth(): Promise<AdminPollHealth>;
+  submitClubClaim(claim: ClubClaim): Promise<ClubClaimResponse>;
 }
 
 export const API_BASE_URL = '/api';
@@ -69,4 +72,5 @@ export const API_ENDPOINTS = {
   referralCredit: () => `${API_BASE_URL}/clubs/referral/apply`,
   adminStats: () => `${API_BASE_URL}/admin/stats`,
   pollHealth: () => `${API_BASE_URL}/admin/poll-health`,
+  clubClaims: () => `${API_BASE_URL}/onboarding/club-claims`,
 } as const;

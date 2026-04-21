@@ -23,12 +23,12 @@ beforeEach(() => {
 const rvccConfig = getClubConfig('rvcc');
 const crestmontConfig = getClubConfig('crestmont');
 
-function renderEntryPage(clubConfig = rvccConfig, initialPath = '/rvcc/entry') {
+function renderEntryPage(clubConfig = rvccConfig, initialPath = '/entry') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
-        <Route path="/:club/entry" element={<EntryPage clubConfig={clubConfig} />} />
-        <Route path="/:club/confirmation" element={<div data-testid="confirmation-page">Confirmed</div>} />
+        <Route path="/entry" element={<EntryPage clubConfig={clubConfig} />} />
+        <Route path="/confirmation" element={<div data-testid="confirmation-page">Confirmed</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -54,7 +54,7 @@ describe('EntryPage', () => {
 
   describe('Crestmont (no self-service entry)', () => {
     it('shows entries closed message instead of entry form', () => {
-      renderEntryPage(crestmontConfig, '/crestmont/entry');
+      renderEntryPage(crestmontConfig, '/entry');
       expect(screen.getByText('Entries Closed')).toBeInTheDocument();
       expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
     });

@@ -24,15 +24,15 @@ const rvccConfig = getClubConfig('rvcc');
 
 function renderWizard(clubConfig = rvccConfig) {
   return render(
-    <MemoryRouter initialEntries={[`/${clubConfig.code}/admin/pools/new`]}>
+    <MemoryRouter initialEntries={['/admin/pools/new']}>
       <Routes>
         <Route
-          path="/:clubCode/admin/pools/new"
+          path="/admin/pools/new"
           element={<PoolWizardPage clubConfig={clubConfig} />}
         />
-        <Route path="/:clubCode/entry" element={<div data-testid="entry-page">Entry</div>} />
+        <Route path="/entry" element={<div data-testid="entry-page">Entry</div>} />
         <Route
-          path="/:clubCode/admin/pools/:poolId"
+          path="/admin/pools/:poolId"
           element={<div data-testid="readonly-page">Read-only</div>}
         />
       </Routes>

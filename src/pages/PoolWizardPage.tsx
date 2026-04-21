@@ -270,7 +270,7 @@ export function PoolWizardPage({ clubConfig }: PoolWizardPageProps) {
     apiClient.getTournaments().then(setTournaments).catch(() => {});
     apiClient.getActivePool(clubConfig.code).then((pool) => {
       if (pool) {
-        navigate(`/${clubConfig.code}/admin/pools/${pool.id}`, { replace: true });
+        navigate(`/admin/pools/${pool.id}`, { replace: true });
       }
     }).catch(() => {});
   }, [clubConfig.code, navigate]);
@@ -312,7 +312,7 @@ export function PoolWizardPage({ clubConfig }: PoolWizardPageProps) {
     try {
       const request = buildCreatePoolRequest(state, clubConfig.code);
       await apiClient.createPool(request);
-      navigate(`/${clubConfig.code}/entry`);
+      navigate('/entry');
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : 'Publish failed. Please try again.');
     } finally {

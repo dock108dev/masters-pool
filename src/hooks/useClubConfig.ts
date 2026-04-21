@@ -1,13 +1,18 @@
-import { getClubConfig, isValidClubCode } from '../config/clubs';
-import { getClubCodeFromHostname } from '../config/subdomain';
+import { getClubConfig } from '../config/clubs';
+import { classifyHost } from '../config/host';
 import type { ClubConfig } from '../types/domain';
 
 export function useClubConfig(): { clubConfig: ClubConfig | null; error: string | null } {
-  const clubCode = getClubCodeFromHostname();
+  const host = classifyHost();
 
-  if (!clubCode || !isValidClubCode(clubCode)) {
-    return { clubConfig: null, error: `Unknown site. Expected rvcc.localhost or crestmont.localhost.` };
+  if (host.kind === 'club') {
+    return { clubConfig: getClubConfig(host.clubCode), error: null };
   }
 
-  return { clubConfig: getClubConfig(clubCode), error: null };
+  // Non-club hosts (onboard/admin/apex/unknown) should not be rendering club UI,
+  // but surface a clear error if they somehow get here.
+  return {
+    clubConfig: null,
+    error: 'Unknown site. Expected rvcc.localhost or crestmont.localhost.',
+  };
 }

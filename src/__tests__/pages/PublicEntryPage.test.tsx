@@ -23,17 +23,17 @@ const rvccConfig = getClubConfig('rvcc');
 const RVCC_TOKEN = MOCK_RVCC_POOL.pool_token!;
 
 function renderPublicEntryPage(
-  initialPath = `/rvcc/enter/${RVCC_TOKEN}`,
+  initialPath = `/enter/${RVCC_TOKEN}`,
 ) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         <Route
-          path="/:clubCode/enter/:poolToken"
+          path="/enter/:poolToken"
           element={<PublicEntryPage clubConfig={rvccConfig} />}
         />
         <Route
-          path="/:clubCode/enter/:poolToken/confirmation"
+          path="/enter/:poolToken/confirmation"
           element={<div data-testid="public-confirmation-page">Confirmed</div>}
         />
       </Routes>
@@ -77,7 +77,7 @@ describe('PublicEntryPage', () => {
     });
 
     it('shows "Pool Not Found" for an unknown token', async () => {
-      renderPublicEntryPage(`/rvcc/enter/unknown-token-that-does-not-exist`);
+      renderPublicEntryPage(`/enter/unknown-token-that-does-not-exist`);
 
       await waitFor(() => {
         expect(screen.getByText(/Pool Not Found/i)).toBeInTheDocument();

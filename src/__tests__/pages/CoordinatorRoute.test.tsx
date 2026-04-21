@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { CoordinatorRoute } from '../../pages/CoordinatorRoute';
 
-// Mock @clerk/clerk-react so tests run without a real Clerk environment
 vi.mock('@clerk/clerk-react', () => ({
   useAuth: vi.fn(),
 }));
@@ -11,13 +10,13 @@ vi.mock('@clerk/clerk-react', () => ({
 import { useAuth } from '@clerk/clerk-react';
 const mockUseAuth = vi.mocked(useAuth);
 
-function renderCoordinatorRoute(path = '/rvcc/admin') {
+function renderCoordinatorRoute(path = '/admin') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/:clubCode/admin/sign-in" element={<div>Sign In Page</div>} />
+        <Route path="/admin/sign-in" element={<div>Sign In Page</div>} />
         <Route
-          path="/:clubCode/admin"
+          path="/admin"
           element={
             <CoordinatorRoute>
               <div data-testid="admin-content">Coordinator Dashboard</div>
@@ -25,7 +24,7 @@ function renderCoordinatorRoute(path = '/rvcc/admin') {
           }
         />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 

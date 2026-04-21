@@ -19,6 +19,8 @@ import type {
   ReferralCreditResponse,
   AdminStats,
   AdminPollHealth,
+  ClubClaim,
+  ClubClaimResponse,
 } from '../types/domain';
 import { API_ENDPOINTS } from './types';
 
@@ -304,6 +306,18 @@ export class HttpApiClient implements ApiClient {
   async getPollHealth(): Promise<AdminPollHealth> {
     const res = await fetch(API_ENDPOINTS.pollHealth());
     if (!res.ok) throw new Error(`Failed to fetch poll health: ${res.status}`);
+    return res.json();
+  }
+
+  async submitClubClaim(claim: ClubClaim): Promise<ClubClaimResponse> {
+    // TODO: backend endpoint POST /api/onboarding/club-claims does not yet exist.
+    // Expected to accept ClubClaim and return { claim_id, received_at }.
+    const res = await fetch(API_ENDPOINTS.clubClaims(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(claim),
+    });
+    if (!res.ok) throw new Error(`Failed to submit club claim: ${res.status}`);
     return res.json();
   }
 

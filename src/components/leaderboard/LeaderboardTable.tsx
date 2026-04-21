@@ -71,7 +71,7 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
                 >
                   <td className="col-pos">{rankDisplay}</td>
                   <td className="col-entry">
-                    <Link to={`/${clubConfig.code}/leaderboard/entry/${standing.entry_id}`}>
+                    <Link to={`/leaderboard/entry/${standing.entry_id}`}>
                       {standing.entry_name}
                     </Link>
                   </td>

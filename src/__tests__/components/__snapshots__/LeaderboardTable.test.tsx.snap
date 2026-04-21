@@ -90,7 +90,7 @@ exports[`LeaderboardTable snapshots > matches snapshot for RVCC leaderboard on a
             >
               <a
                 data-discover="true"
-                href="/rvcc/leaderboard/entry/1"
+                href="/leaderboard/entry/1"
               >
                 John Smith
               </a>
@@ -316,7 +316,7 @@ exports[`LeaderboardTable snapshots > matches snapshot for RVCC leaderboard on a
             >
               <a
                 data-discover="true"
-                href="/rvcc/leaderboard/entry/2"
+                href="/leaderboard/entry/2"
               >
                 Jane Doe
               </a>
@@ -542,7 +542,7 @@ exports[`LeaderboardTable snapshots > matches snapshot for RVCC leaderboard on a
             >
               <a
                 data-discover="true"
-                href="/rvcc/leaderboard/entry/3"
+                href="/leaderboard/entry/3"
               >
                 Bob Wilson
               </a>

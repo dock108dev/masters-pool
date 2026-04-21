@@ -311,3 +311,16 @@ export interface EntryLookupResult {
   email: string;
   entries: EntryLookupEntry[];
 }
+
+// Club claim — submitted from the onboard page by prospective coordinators
+export interface ClubClaim {
+  club_name: string;
+  contact_email: string;
+  expected_entries: number | null;
+  notes: string;
+}
+
+export interface ClubClaimResponse {
+  claim_id: string;
+  received_at: string;
+}

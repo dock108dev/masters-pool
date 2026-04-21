@@ -23,37 +23,63 @@ The app defaults to `MockApiClient` — no backend needed for local development.
 | `VITE_API_BASE_URL` | Optional | Backend base URL (mock used when absent) |
 | `SPORTS_API_KEY` | Production only | Injected by nginx into backend proxy requests |
 
-## Clubs
+## Hosts and routing
 
-Two clubs are configured in `src/config/clubs.ts`:
+Routing is **host-based**. The subdomain decides which app renders; paths never carry a `clubCode`.
+
+| Host | Purpose |
+|---|---|
+| `onboard.dock108.dev` | Marketing + "claim your club" form, coordinator sign-up |
+| `admin.dock108.dev` | Platform superadmin dashboard (requires `publicMetadata.role === 'superadmin'`) |
+| `rvcc.dock108.dev` | Raritan Valley CC — public pool + coordinator admin |
+| `crestmont.dock108.dev` | Crestmont CC — public pool + coordinator admin |
+| `dock108.dev` (apex) | 301 redirects to `onboard.dock108.dev` |
+
+Clubs are configured in `src/config/clubs.ts`:
 
 | Club | Code | Pick Format |
 |---|---|---|
 | Raritan Valley CC | `rvcc` | Pick any 7, best 5 count |
 | Crestmont CC | `crestmont` | Pick 1 from each of 6 groups, best 4 count |
 
-All routes are club-scoped: `/:clubCode/entry`, `/:clubCode/leaderboard`, etc.
-Root `/` shows the marketing landing page.
+**Local dev:** vite serves any `*.localhost` hostname thanks to `server.host: true`. Use:
 
-## Routes
+- `onboard.localhost:5173` — onboarding + sign-up
+- `admin.localhost:5173` — superadmin
+- `rvcc.localhost:5173` / `crestmont.localhost:5173` — club apps
 
+Bare `localhost:5173` redirects to `onboard.localhost:5173`.
+
+### Routes per host
+
+**`onboard.*`**
 | Path | Auth | Description |
 |---|---|---|
-| `/` | None | Marketing landing page |
+| `/` | None | Marketing + claim form |
 | `/sign-up` | None | Coordinator sign-up (Clerk) |
-| `/:clubCode` | None | Club home |
-| `/:clubCode/rules` | None | Club rules |
-| `/:clubCode/entry` | None | Pick submission (when `allowSelfServiceEntry: true`) |
-| `/:clubCode/leaderboard` | None | Live standings |
-| `/:clubCode/leaderboard/entry/:entryId` | None | Entry detail view |
-| `/:clubCode/lookup` | None | Email-based entry lookup |
-| `/:clubCode/enter/:poolToken` | None | Public entry link (no login required) |
-| `/:clubCode/admin/sign-in` | None | Coordinator sign-in (Clerk) |
-| `/:clubCode/admin` | Clerk | Admin overview |
-| `/:clubCode/admin/pools` | Clerk | Pool listing |
-| `/:clubCode/admin/pools/new` | Clerk | Pool creation wizard |
-| `/:clubCode/admin/pools/:poolId` | Clerk | Coordinator pool dashboard |
-| `/:clubCode/admin/branding` | Clerk | Branding settings |
+| `/welcome` | None | Post-signup confirmation |
+
+**`admin.*`**
+| Path | Auth | Description |
+|---|---|---|
+| `/sign-in` | None | Superadmin sign-in (Clerk) |
+| `/` | `superadmin` | Platform ops dashboard |
+
+**`rvcc.*` / `crestmont.*` (club)**
+| Path | Auth | Description |
+|---|---|---|
+| `/` | None | Club home |
+| `/rules` | None | Club rules |
+| `/entry` | None | Pick submission (when `allowSelfServiceEntry: true`) |
+| `/leaderboard` | None | Live standings |
+| `/leaderboard/entry/:entryId` | None | Entry detail |
+| `/lookup` | None | Email-based entry lookup |
+| `/enter/:poolToken` | None | Public entry link |
+| `/admin/sign-in` | None | Coordinator sign-in |
+| `/admin` | `org:admin` | Pool listing |
+| `/admin/pools/new` | `org:admin` | Pool creation wizard |
+| `/admin/pools/:poolId` | `org:admin` | Coordinator pool dashboard |
+| `/admin/branding` | `org:admin` | Branding settings |
 
 ## Deployment
 

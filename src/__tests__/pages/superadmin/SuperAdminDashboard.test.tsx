@@ -1,26 +1,26 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MockApiClient } from '../../api/mock/adapters';
-import { AdminDashboard } from '../../pages/AdminDashboard';
+import { MockApiClient } from '../../../api/mock/adapters';
+import { SuperAdminDashboard } from '../../../pages/superadmin/SuperAdminDashboard';
 
 let activeClient: MockApiClient = new MockApiClient(0);
 
-vi.mock('../../api/client', () => ({
+vi.mock('../../../api/client', () => ({
   get apiClient() {
     return activeClient;
   },
 }));
 
-describe('AdminDashboard', () => {
+describe('SuperAdminDashboard', () => {
   beforeEach(() => {
     activeClient = new MockApiClient(0);
   });
 
   it('renders the dashboard with platform stats', async () => {
-    render(<AdminDashboard />);
+    render(<SuperAdminDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument();
+      expect(screen.getByTestId('superadmin-dashboard')).toBeInTheDocument();
     });
 
     expect(screen.getByTestId('stat-total-pools')).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe('AdminDashboard', () => {
       mrr_cents: 0,
     });
 
-    render(<AdminDashboard />);
+    render(<SuperAdminDashboard />);
 
     await waitFor(() => {
       expect(screen.getByTestId('mrr-value')).toHaveTextContent('$0');
@@ -52,7 +52,7 @@ describe('AdminDashboard', () => {
       mrr_cents: 19900,
     });
 
-    render(<AdminDashboard />);
+    render(<SuperAdminDashboard />);
 
     await waitFor(() => {
       expect(screen.getByTestId('mrr-value')).toHaveTextContent('$199');
@@ -60,7 +60,7 @@ describe('AdminDashboard', () => {
   });
 
   it('renders poll health rows for active tournaments', async () => {
-    render(<AdminDashboard />);
+    render(<SuperAdminDashboard />);
 
     await waitFor(() => {
       const rows = screen.getAllByTestId('poll-health-row');
@@ -83,7 +83,7 @@ describe('AdminDashboard', () => {
       checked_at: '2026-04-13T14:27:00Z',
     });
 
-    render(<AdminDashboard />);
+    render(<SuperAdminDashboard />);
 
     await waitFor(() => {
       expect(screen.getByTestId('poll-health-stale')).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('AdminDashboard', () => {
       checked_at: '2026-04-06T12:05:00Z',
     });
 
-    render(<AdminDashboard />);
+    render(<SuperAdminDashboard />);
 
     await waitFor(() => {
       expect(screen.getByTestId('poll-health-ok')).toHaveTextContent('OFF-WINDOW');
@@ -114,11 +114,9 @@ describe('AdminDashboard', () => {
   });
 
   it('shows an error banner when stats fetch fails', async () => {
-    vi.spyOn(activeClient, 'getAdminStats').mockRejectedValue(
-      new Error('Network error'),
-    );
+    vi.spyOn(activeClient, 'getAdminStats').mockRejectedValue(new Error('Network error'));
 
-    render(<AdminDashboard />);
+    render(<SuperAdminDashboard />);
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument();
