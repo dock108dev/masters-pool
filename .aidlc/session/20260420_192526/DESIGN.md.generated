@@ -1,8 +1,0 @@
-`DESIGN.md` is written to `/Users/dock108/git/sports/club-golf-tools/DESIGN.md`. It covers:
-
-1. **Design Principles** — invalid states unrepresentable, pure deterministic scoring, platform removes itself from critical path, correctness over features, strict tenant isolation
-2. **Patterns** — interface-driven API client, immutable config snapshot with hash, discriminated union errors, slot-based picker, fold-based scoring engine, polling with stale-while-revalidate, tenant context from subdomain
-3. **Anti-Patterns** — manual score adjustments, unvalidated CSV, mutable config post-lock, session-only tenant guard, `any` in API responses, global mutable pick state
-4. **Naming Conventions** — file, directory, identifier, and scoring version standards
-5. **Error Handling** — three-zone strategy (user/boundary/system), `Result<T>` type, hard-deadline failsafe for lock timing
-6. **Testing Strategy** — Vitest + Testing Library + MSW, golden file regression for scoring, exhaustive Masters cut rule tests, what not to test
