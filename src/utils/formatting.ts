@@ -19,5 +19,7 @@ export function formatLastUpdated(isoString: string): string {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
+    // Fixed zone so "last scored" matches tournament context and is stable in CI vs local dev
+    timeZone: 'America/New_York',
   });
 }
