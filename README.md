@@ -1,105 +1,73 @@
 # Masters Pool Web
 
-Golf country club pool frontend for the Masters tournament. Supports multiple clubs (RVCC, Crestmont) with shared components, club-specific rules, and a typed API client layer aligned with the [sports-data-admin](https://github.com/dock108dev/sports-data-admin) backend.
+Golf pool frontend for the Masters tournament at private country clubs. Coordinators manage pools through a Clerk-authenticated admin area; entrants submit picks via public entry links or the club entry form.
 
-Currently runs against mock data. Swap one line in `src/api/client.ts` to connect to the real backend.
+Backend: [sports-data-admin](https://github.com/dock108dev/sports-data-admin)
 
 ## Quick Start
 
 ```bash
 npm install
-npm run dev            # Dev server at http://localhost:5173
-npm run test           # Run all tests
-npm run test:watch     # Watch mode
-npm run test:coverage  # Coverage report (v8)
-npm run build          # Production build → dist/
+npm run dev        # Dev server at http://localhost:5173
+npm test           # Run all tests
+npm run build      # Production build → dist/
 ```
 
-## Club Configuration
+The app defaults to `MockApiClient` — no backend needed for local development. To connect to the real backend, set `VITE_API_BASE_URL` and swap the export in `src/api/client.ts`.
 
-Each club is defined in `src/config/clubs.ts` as a `ClubConfig` object controlling:
+## Environment Variables
 
-- **Pick rules**: number of golfers, bucket mode, cut minimums, scored count
-- **UI labels**: club name, rules text, bucket labels, leaderboard column headers
-- **Limits**: max entries per email
-
-The frontend `ClubConfig` is for UI rendering and client-side validation. The backend's `pool.rules_json` is authoritative for scoring.
-
-Routes are club-scoped: `/:clubCode/entry`, `/:clubCode/leaderboard`, etc. Root (`/`) redirects to `/rvcc`.
-
-### RVCC
-Pick any 7 golfers. At least 5 must make the cut. Best 5 scores count. Lowest aggregate wins.
-
-### Crestmont
-Pick 1 golfer from each of 6 buckets. At least 4 must make the cut. Best 4 scores count. Lowest aggregate wins.
-
-## Backend API
-
-The app consumes the `sports-data-admin` Golf Pools API via a typed `ApiClient` interface (`src/api/types.ts`):
-
-| Method | Backend Endpoint | Description |
+| Variable | Required | Purpose |
 |---|---|---|
-| `getActivePool(clubCode)` | `GET /api/golf/pools?club_code={code}&active_only=true` | Find the active pool for a club |
-| `getPoolDetail(poolId)` | `GET /api/golf/pools/{poolId}` | Pool detail with rules and status |
-| `getPoolField(poolId)` | `GET /api/golf/pools/{poolId}/field` | Selectable golfers (flat or bucketed) |
-| `submitEntry(poolId, request)` | `POST /api/golf/pools/{poolId}/entries` | Submit entry with picks |
-| `getLeaderboard(poolId)` | `GET /api/golf/pools/{poolId}/leaderboard` | Materialized standings |
-| `lookupEntries(poolId, email)` | `GET /api/golf/pools/{poolId}/entries/by-email?email=...` | Look up entries by email |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk public key for coordinator auth |
+| `VITE_API_BASE_URL` | Optional | Backend base URL (mock used when absent) |
+| `SPORTS_API_KEY` | Production only | Injected by nginx into backend proxy requests |
 
-The backend uses `X-API-Key` header authentication. All golfers are identified by DataGolf `dg_id` (number). Buckets use 1-indexed `bucket_number`. See `docs/api-contracts.md` for full request/response shapes.
+## Clubs
 
-### Swapping Mocks for Real API
+Two clubs are configured in `src/config/clubs.ts`:
 
-1. Implement the `ApiClient` interface with `fetch` calls (endpoint patterns are in `API_ENDPOINTS`)
-2. Update `src/api/client.ts` to export the new client instead of `MockApiClient`
+| Club | Code | Pick Format |
+|---|---|---|
+| Raritan Valley CC | `rvcc` | Pick any 7, best 5 count |
+| Crestmont CC | `crestmont` | Pick 1 from each of 6 groups, best 4 count |
 
-Mock adapter and data are kept for tests.
+All routes are club-scoped: `/:clubCode/entry`, `/:clubCode/leaderboard`, etc.
+Root `/` shows the marketing landing page.
 
-## Project Structure
+## Routes
 
-```
-src/
-  types/domain.ts           # All domain types (aligned with backend API shapes)
-  config/clubs.ts           # ClubConfig for RVCC and Crestmont
-  api/
-    types.ts                # ApiClient interface + API_ENDPOINTS
-    client.ts               # Active client instance (swap mock → real here)
-    mock/
-      adapters.ts           # MockApiClient with configurable latency
-      data.ts               # Deterministic mock data
-  components/
-    layout/                 # Header, Footer, Layout
-    common/                 # LoadingState, ErrorState, EmptyState
-    leaderboard/            # LeaderboardTable, GolferCell
-    entry/                  # GolferPicker (RVCC), BucketPicker (Crestmont)
-  pages/                    # HomePage, RulesPage, EntryPage, ConfirmationPage,
-                            # LeaderboardPage, LookupPage, ClubRoot, PageWrappers
-  hooks/                    # useClubConfig, useApi
-  utils/
-    formatting.ts           # Score, position, thru display formatters
-    validation.ts           # Email, name, pick count, bucket enforcement
-  __tests__/                # Mirrors src/ structure
-```
+| Path | Auth | Description |
+|---|---|---|
+| `/` | None | Marketing landing page |
+| `/sign-up` | None | Coordinator sign-up (Clerk) |
+| `/:clubCode` | None | Club home |
+| `/:clubCode/rules` | None | Club rules |
+| `/:clubCode/entry` | None | Pick submission (when `allowSelfServiceEntry: true`) |
+| `/:clubCode/leaderboard` | None | Live standings |
+| `/:clubCode/leaderboard/entry/:entryId` | None | Entry detail view |
+| `/:clubCode/lookup` | None | Email-based entry lookup |
+| `/:clubCode/enter/:poolToken` | None | Public entry link (no login required) |
+| `/:clubCode/admin/sign-in` | None | Coordinator sign-in (Clerk) |
+| `/:clubCode/admin` | Clerk | Admin overview |
+| `/:clubCode/admin/pools` | Clerk | Pool listing |
+| `/:clubCode/admin/pools/new` | Clerk | Pool creation wizard |
+| `/:clubCode/admin/pools/:poolId` | Clerk | Coordinator pool dashboard |
+| `/:clubCode/admin/branding` | Clerk | Branding settings |
 
-## Testing
+## Deployment
 
-```bash
-npm run test              # 347 tests across 19 files
-npm run test:coverage     # With v8 coverage report
-```
+Pushing to `main` builds a Docker image, pushes to `ghcr.io`, and deploys to Hetzner via SSH.
+Production runs on port 3002. nginx proxies `/api/*` to the backend and injects `X-API-Key`.
 
-Coverage areas:
-- Club config driven rendering (RVCC vs Crestmont)
-- Pick validation (count, duplicates, bucket enforcement)
-- Leaderboard rendering (standings, golfer cells, qualification badges)
-- Loading, error, and empty states
-- Mock API adapter behavior and data consistency
-- Page-level integration tests for all screens
-- Formatting and validation helpers
+See [CI workflow](.github/workflows/ci.yml) for the full pipeline: lint → typecheck → test → build → docker → deploy.
 
-## Key Design Decisions
+## Documentation
 
-- **No scoring logic in the frontend.** The backend computes rankings, qualification status, counted/dropped picks, and aggregate scores. The frontend only displays pre-computed results.
-- **No authentication.** Entry submission uses email as identifier. The backend enforces entry limits and deadlines.
-- **File upload is admin-only.** CSV bulk import is a backend admin feature, not a self-service frontend flow.
-- **Club config is duplicated intentionally.** The frontend `ClubConfig` drives UI (labels, validation hints). The backend `rules_json` is authoritative for scoring. They must stay in sync manually.
+| Doc | Contents |
+|---|---|
+| [Architecture](docs/architecture.md) | Component breakdown, data flows, directory structure |
+| [Design Principles](docs/design.md) | Coding patterns and anti-patterns |
+| [Roadmap](docs/roadmap.md) | Feature phases and acceptance criteria |
+| [API Contracts](docs/api-contracts.md) | All 22 backend endpoint signatures |
+| [Contributing](CLAUDE.md) | Style, naming, testing, git conventions |

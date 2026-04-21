@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EntryPage snapshots > matches snapshot for entries-closed state (RVCC has allowSelfServiceEntry=false) 1`] = `
+<div>
+  <div
+    class="page entry-page"
+  >
+    <h1>
+      Entries Closed
+    </h1>
+    <p>
+      Entries for the 
+      RVCC
+       pool are now closed.
+    </p>
+  </div>
+</div>
+`;

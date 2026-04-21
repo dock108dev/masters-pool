@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { LookupPage } from '../../pages/LookupPage';
 import { getClubConfig } from '../../config/clubs';
+import * as apiClientModule from '../../api/client';
 
 vi.mock('../../api/client', () => ({
   apiClient: new MockApiClient(0),
@@ -106,5 +107,38 @@ describe('LookupPage', () => {
   it('lookup button shows "Look Up" text initially', () => {
     renderLookupPage();
     expect(screen.getByTestId('lookup-button')).toHaveTextContent('Look Up');
+  });
+
+  it('renders "No entry found for [email]" message on 404 response, not an error boundary', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(apiClientModule.apiClient, 'lookupEntries').mockRejectedValueOnce(
+      Object.assign(new Error('No entry found for notfound@example.com'), { status: 404 })
+    );
+    renderLookupPage();
+    await user.type(screen.getByTestId('lookup-email-input'), 'notfound@example.com');
+    await user.click(screen.getByTestId('lookup-button'));
+    await waitFor(() => {
+      expect(screen.getByText(/No entry found for notfound@example\.com/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('lookup-results')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('renders picks in pick_slot order on valid response', async () => {
+    const user = userEvent.setup();
+    renderLookupPage();
+    await user.type(screen.getByTestId('lookup-email-input'), 'test@example.com');
+    await user.click(screen.getByTestId('lookup-button'));
+    await screen.findByTestId('lookup-results');
+
+    const pickItems = screen.getAllByTestId(/^lookup-pick-slot-/);
+    const slots = pickItems.map((el) => {
+      const match = el.getAttribute('data-testid')?.match(/lookup-pick-slot-(\d+)/);
+      return match ? parseInt(match[1], 10) : -1;
+    });
+    // Slots must be in ascending order
+    for (let i = 1; i < slots.length; i++) {
+      expect(slots[i]).toBeGreaterThan(slots[i - 1]);
+    }
   });
 });

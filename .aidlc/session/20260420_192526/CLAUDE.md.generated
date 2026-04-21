@@ -1,0 +1,1 @@
+`CLAUDE.md` is written at the project root. It covers all eight required sections with specifics drawn from the actual codebase: the Vitest setup and 347-test count, the `MockApiClient` seam pattern, the `snake_case` vs camelCase boundary between API types and frontend types, the `ClubConfig`-is-UI-only rule, and the CI gate order.

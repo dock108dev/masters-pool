@@ -44,14 +44,14 @@ I:
 ## Hard Reality
 
 Going from 2 → 40 clubs is NOT:
-- “just more users”
+- "just more users"
 
 It is:
 - removing myself from every critical path
-- building guardrails so users can’t break things
+- building guardrails so users can't break things
 - making the system deterministic and trustable
 
-If I don’t:
+If I don't:
 - I become support
 - I become QA
 - I become the bottleneck
@@ -106,7 +106,7 @@ Requirements:
 
 Fix:
 - scoring engine = single source of truth
-- no “manual adjustments”
+- no "manual adjustments"
 - full recompute always possible
 
 ---
@@ -134,12 +134,12 @@ Fix:
 40 clubs = hundreds of users
 
 Questions will be:
-- “did my pick save”
-- “why is this guy cut”
-- “this looks wrong”
+- "did my pick save"
+- "why is this guy cut"
+- "this looks wrong"
 
 Fix:
-- UI answers questions before they’re asked
+- UI answers questions before they're asked
 - audit trail for entries
 - clear states everywhere
 
@@ -295,14 +295,14 @@ Needs:
 ## Expansion Strategy (Beyond Masters)
 
 Golf majors:
-- [PGA Championship](chatgpt://generic-entity?number=0)  
-- [U.S. Open](chatgpt://generic-entity?number=1)  
-- [The Open Championship](chatgpt://generic-entity?number=2)  
+- PGA Championship
+- U.S. Open
+- The Open Championship
 
 Future:
 - March Madness pools
 - NFL survivor
-- weekly pick’em
+- weekly pick'em
 
 Key idea:
 > pools are the product, golf is just v1
@@ -405,7 +405,7 @@ If no:
 
 This is not a feature problem.
 
-It’s:
+It's:
 - system design
 - trust
 - removing human dependency

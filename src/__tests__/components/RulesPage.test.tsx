@@ -35,9 +35,6 @@ describe('RulesPage', () => {
       expect(screen.getByText(/Maximum 3 entries per email/)).toBeInTheDocument();
     });
 
-    it('does not show file upload info (upload is admin-only)', () => {
-      expect(screen.queryByText(/File upload/)).not.toBeInTheDocument();
-    });
   });
 
   describe('Crestmont', () => {
@@ -67,10 +64,6 @@ describe('RulesPage', () => {
 
     it('shows max entries per email when configured', () => {
       expect(screen.getByText(/Maximum 2 entries per email/)).toBeInTheDocument();
-    });
-
-    it('does not show file upload info (upload is admin-only)', () => {
-      expect(screen.queryByText(/File upload/)).not.toBeInTheDocument();
     });
   });
 });

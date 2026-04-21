@@ -1,13 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatScore,
-  formatGolferStatus,
-  formatPosition,
   formatThru,
   formatLastUpdated,
-  formatGolferCell,
 } from '../../utils/formatting';
-import type { GolferStatus } from '../../types/domain';
 
 // ---------------------------------------------------------------------------
 // formatScore
@@ -41,57 +37,6 @@ describe('formatScore', () => {
   it('does not return "E" for non-zero values', () => {
     expect(formatScore(1)).not.toBe('E');
     expect(formatScore(-1)).not.toBe('E');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// formatGolferStatus
-// ---------------------------------------------------------------------------
-describe('formatGolferStatus', () => {
-  it('returns an empty string for "active" status', () => {
-    expect(formatGolferStatus('active')).toBe('');
-  });
-
-  it('returns "CUT" for "cut" status', () => {
-    expect(formatGolferStatus('cut')).toBe('CUT');
-  });
-
-  it('returns "WD" for "wd" status (withdrawal)', () => {
-    expect(formatGolferStatus('wd')).toBe('WD');
-  });
-
-  it('returns "DQ" for "dq" status (disqualification)', () => {
-    expect(formatGolferStatus('dq')).toBe('DQ');
-  });
-
-  it('covers all four GolferStatus values', () => {
-    const statuses: GolferStatus[] = ['active', 'cut', 'wd', 'dq'];
-    const results = statuses.map(formatGolferStatus);
-    expect(results).toEqual(['', 'CUT', 'WD', 'DQ']);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// formatPosition
-// ---------------------------------------------------------------------------
-describe('formatPosition', () => {
-  it('returns "-" for null position', () => {
-    expect(formatPosition(null)).toBe('-');
-  });
-
-  it('returns the number as a string for a valid position', () => {
-    expect(formatPosition(1)).toBe('1');
-    expect(formatPosition(10)).toBe('10');
-    expect(formatPosition(42)).toBe('42');
-  });
-
-  it('returns "0" for position 0', () => {
-    expect(formatPosition(0)).toBe('0');
-  });
-
-  it('returns a string type, not a number', () => {
-    const result = formatPosition(5);
-    expect(typeof result).toBe('string');
   });
 });
 
@@ -161,64 +106,3 @@ describe('formatLastUpdated', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// formatGolferCell
-// Signature: (golferName: string, score: number | null, thru: number | null, status: GolferStatus)
-// ---------------------------------------------------------------------------
-describe('formatGolferCell', () => {
-  const name = 'Scottie Scheffler';
-
-  it('formats an active golfer with negative score and finished thru', () => {
-    // score -5, thru 18 → "F"
-    const result = formatGolferCell(name, -5, 18, 'active');
-    expect(result).toBe('Scottie Scheffler (-5 / F)');
-  });
-
-  it('formats an active golfer with a positive score and mid-round thru', () => {
-    const result = formatGolferCell(name, 2, 14, 'active');
-    expect(result).toBe('Scottie Scheffler (+2 / 14)');
-  });
-
-  it('formats an active golfer with even-par score', () => {
-    const result = formatGolferCell('Tiger Woods', 0, 18, 'active');
-    expect(result).toBe('Tiger Woods (E / F)');
-  });
-
-  it('formats an active golfer with null score and null thru', () => {
-    const result = formatGolferCell(name, null, null, 'active');
-    expect(result).toBe('Scottie Scheffler (- / -)');
-  });
-
-  it('returns "Name (CUT)" for a cut golfer, ignoring score/thru', () => {
-    const result = formatGolferCell(name, -3, 18, 'cut');
-    expect(result).toBe('Scottie Scheffler (CUT)');
-  });
-
-  it('returns "Name (WD)" for a withdrawn golfer, ignoring score/thru', () => {
-    const result = formatGolferCell(name, 1, null, 'wd');
-    expect(result).toBe('Scottie Scheffler (WD)');
-  });
-
-  it('returns "Name (DQ)" for a disqualified golfer, ignoring score/thru', () => {
-    const result = formatGolferCell(name, null, null, 'dq');
-    expect(result).toBe('Scottie Scheffler (DQ)');
-  });
-
-  it('does not leak score/thru into cut/wd/dq output', () => {
-    expect(formatGolferCell(name, -3, 9, 'cut')).not.toContain('-3');
-    expect(formatGolferCell(name, 1, 18, 'wd')).not.toContain('+1');
-    expect(formatGolferCell(name, 0, 18, 'dq')).not.toContain('/ F');
-  });
-
-  it('always contains the golfer name', () => {
-    const statuses: GolferStatus[] = ['active', 'cut', 'wd', 'dq'];
-    for (const status of statuses) {
-      expect(formatGolferCell(name, 0, 18, status)).toContain(name);
-    }
-  });
-
-  it('separates score and thru with " / " for active status', () => {
-    const result = formatGolferCell('Tiger Woods', 0, 18, 'active');
-    expect(result).toBe('Tiger Woods (E / F)');
-  });
-});

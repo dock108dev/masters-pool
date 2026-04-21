@@ -1,4 +1,4 @@
-import type { ClubConfig, AvailableGolfer, GolferBucket } from '../types/domain';
+import type { ClubConfig, GolferBucket } from '../types/domain';
 
 export interface ValidationResult {
   valid: boolean;
@@ -17,10 +17,13 @@ export function validateEmail(email: string): ValidationResult {
 
 export function validateDisplayName(name: string): ValidationResult {
   const errors: string[] = [];
-  if (!name.trim()) {
+  const trimmed = name.trim();
+  if (!trimmed) {
     errors.push('Display name is required.');
-  } else if (name.trim().length < 2) {
+  } else if (trimmed.length < 2) {
     errors.push('Display name must be at least 2 characters.');
+  } else if (trimmed.length > 100) {
+    errors.push('Display name must be 100 characters or fewer.');
   }
   return { valid: errors.length === 0, errors };
 }
@@ -40,6 +43,16 @@ export function validateRvccPicks(
   return { valid: errors.length === 0, errors };
 }
 
+function buildGolferBucketMap(buckets: GolferBucket[]): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const bucket of buckets) {
+    for (const g of bucket.golfers) {
+      map.set(g.dg_id, bucket.bucket_number);
+    }
+  }
+  return map;
+}
+
 export function validateCrestmontPicks(
   selectedDgIds: number[],
   buckets: GolferBucket[],
@@ -51,13 +64,7 @@ export function validateCrestmontPicks(
     errors.push(`You must select exactly ${config.pickCount} golfers (1 from each bucket). Currently selected: ${selectedDgIds.length}.`);
   }
 
-  // Map dg_id → bucket_number
-  const golferBucketMap = new Map<number, number>();
-  for (const bucket of buckets) {
-    for (const g of bucket.golfers) {
-      golferBucketMap.set(g.dg_id, bucket.bucket_number);
-    }
-  }
+  const golferBucketMap = buildGolferBucketMap(buckets);
 
   const bucketsUsed = new Set<number>();
   for (const dgId of selectedDgIds) {
@@ -106,10 +113,42 @@ export function validateEntryForm(
   return { valid: allErrors.length === 0, errors: allErrors };
 }
 
+/** Like validateEntryForm but email is optional — only format-checked when non-empty. */
+export function validatePublicEntryForm(
+  email: string,
+  displayName: string,
+  selectedDgIds: number[],
+  config: ClubConfig,
+  buckets: GolferBucket[] | null,
+): ValidationResult {
+  const allErrors: string[] = [];
+
+  if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    allErrors.push('Please enter a valid email address.');
+  }
+
+  const nameResult = validateDisplayName(displayName);
+  allErrors.push(...nameResult.errors);
+
+  if (config.useBuckets && buckets) {
+    allErrors.push(...validateCrestmontPicks(selectedDgIds, buckets, config).errors);
+  } else {
+    allErrors.push(...validateRvccPicks(selectedDgIds, config).errors);
+  }
+
+  return { valid: allErrors.length === 0, errors: allErrors };
+}
+
+/** Returns per-slot error messages; null means the slot is filled. */
+export function validateSlotSelections(slotSelections: (number | null)[]): (string | null)[] {
+  return slotSelections.map((id) =>
+    id === null ? 'Please select a golfer for this slot.' : null
+  );
+}
+
 export function canAddGolfer(
   dgId: number,
   selectedDgIds: number[],
-  _availableGolfers: AvailableGolfer[],
   config: ClubConfig,
   buckets: GolferBucket[] | null,
   golferBucketNumber?: number
@@ -126,12 +165,7 @@ export function canAddGolfer(
   }
 
   if (buckets && golferBucketNumber !== undefined) {
-    const golferBucketMap = new Map<number, number>();
-    for (const bucket of buckets) {
-      for (const g of bucket.golfers) {
-        golferBucketMap.set(g.dg_id, bucket.bucket_number);
-      }
-    }
+    const golferBucketMap = buildGolferBucketMap(buckets);
     const alreadyPickedFromBucket = selectedDgIds.some(
       (id) => golferBucketMap.get(id) === golferBucketNumber
     );

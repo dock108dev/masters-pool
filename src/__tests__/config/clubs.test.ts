@@ -108,14 +108,6 @@ describe('RVCC club config', () => {
     expect(rvcc.bucketLabels).toBeUndefined();
   });
 
-  it('does not have uploadEnabled property (file upload is admin-only)', () => {
-    expect((rvcc as Record<string, unknown>).uploadEnabled).toBeUndefined();
-  });
-
-  it('does not have uploadRequired property (file upload is admin-only)', () => {
-    expect((rvcc as Record<string, unknown>).uploadRequired).toBeUndefined();
-  });
-
   it('has a non-empty rulesDescription array', () => {
     expect(Array.isArray(rvcc.rulesDescription)).toBe(true);
     expect(rvcc.rulesDescription.length).toBeGreaterThan(0);
@@ -187,14 +179,6 @@ describe('Crestmont club config', () => {
       'Group 5',
       'Group 6',
     ]);
-  });
-
-  it('does not have uploadEnabled property (file upload is admin-only)', () => {
-    expect((crestmont as Record<string, unknown>).uploadEnabled).toBeUndefined();
-  });
-
-  it('does not have uploadRequired property (file upload is admin-only)', () => {
-    expect((crestmont as Record<string, unknown>).uploadRequired).toBeUndefined();
   });
 
   it('has a non-empty rulesDescription array', () => {

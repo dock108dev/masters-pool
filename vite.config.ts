@@ -13,7 +13,8 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
         headers: {
-          'X-API-Key': process.env.SPORTS_API_KEY ?? '0778e8aed6d6bc38b9d209214a22c11496130957d38a389b8b293028ec538fa1',
+          // SPORTS_API_KEY must be set in .env.local — no hardcoded fallback
+          ...(process.env.SPORTS_API_KEY ? { 'X-API-Key': process.env.SPORTS_API_KEY } : {}),
         },
       },
     },

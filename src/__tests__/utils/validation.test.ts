@@ -8,7 +8,7 @@ import {
   canAddGolfer,
 } from '../../utils/validation';
 import { CLUB_CONFIGS } from '../../config/clubs';
-import type { AvailableGolfer, GolferBucket } from '../../types/domain';
+import type { GolferBucket } from '../../types/domain';
 
 const rvccConfig = CLUB_CONFIGS.rvcc;         // pickCount: 7, useBuckets: false
 const crestmontConfig = CLUB_CONFIGS.crestmont; // pickCount: 6, useBuckets: true
@@ -80,8 +80,6 @@ const MOCK_GOLFER_BUCKETS: GolferBucket[] = [
     ],
   },
 ];
-
-const MOCK_AVAILABLE_GOLFERS: AvailableGolfer[] = MOCK_GOLFER_BUCKETS.flatMap((b) => b.golfers);
 
 // One dg_id per bucket (bucket_number 1–6)
 const ONE_PER_BUCKET: number[] = [1, 5, 9, 13, 17, 21];
@@ -384,7 +382,7 @@ describe('canAddGolfer', () => {
   // -- Already selected --
 
   it('disallows adding a golfer that is already in the selected list', () => {
-    const result = canAddGolfer(1, [1, 2], MOCK_AVAILABLE_GOLFERS, rvccConfig, null);
+    const result = canAddGolfer(1, [1, 2], rvccConfig, null);
     expect(result.allowed).toBe(false);
     expect(result.reason).toBe('Already selected.');
   });
@@ -392,20 +390,20 @@ describe('canAddGolfer', () => {
   // -- RVCC (no buckets): max count enforcement --
 
   it('RVCC: disallows adding when pickCount is already reached', () => {
-    const result = canAddGolfer(8, SEVEN_UNIQUE, MOCK_AVAILABLE_GOLFERS, rvccConfig, null);
+    const result = canAddGolfer(8, SEVEN_UNIQUE, rvccConfig, null);
     expect(result.allowed).toBe(false);
     expect(result.reason).toMatch(/maximum of 7/i);
   });
 
   it('RVCC: allows adding when fewer than pickCount are selected', () => {
-    const result = canAddGolfer(8, [1, 2, 3], MOCK_AVAILABLE_GOLFERS, rvccConfig, null);
+    const result = canAddGolfer(8, [1, 2, 3], rvccConfig, null);
     expect(result.allowed).toBe(true);
     expect(result.reason).toBeUndefined();
   });
 
   it('RVCC: allows adding the 7th (last allowed) golfer', () => {
     const sixSelected = SEVEN_UNIQUE.slice(0, 6); // 6 golfers
-    const result = canAddGolfer(8, sixSelected, MOCK_AVAILABLE_GOLFERS, rvccConfig, null);
+    const result = canAddGolfer(8, sixSelected, rvccConfig, null);
     expect(result.allowed).toBe(true);
   });
 
@@ -416,7 +414,6 @@ describe('canAddGolfer', () => {
     const result = canAddGolfer(
       2,
       [1, 5, 9],
-      MOCK_AVAILABLE_GOLFERS,
       crestmontConfig,
       MOCK_GOLFER_BUCKETS,
       1, // golferBucketNumber for dg_id 2
@@ -430,7 +427,6 @@ describe('canAddGolfer', () => {
     const result = canAddGolfer(
       9,
       [1, 5],
-      MOCK_AVAILABLE_GOLFERS,
       crestmontConfig,
       MOCK_GOLFER_BUCKETS,
       3, // golferBucketNumber for dg_id 9
@@ -444,7 +440,6 @@ describe('canAddGolfer', () => {
     const result = canAddGolfer(
       25,
       ONE_PER_BUCKET,
-      MOCK_AVAILABLE_GOLFERS,
       crestmontConfig,
       MOCK_GOLFER_BUCKETS,
       7, // hypothetical 7th bucket — no collision
@@ -458,7 +453,6 @@ describe('canAddGolfer', () => {
     const result = canAddGolfer(
       3,
       [1],
-      MOCK_AVAILABLE_GOLFERS,
       crestmontConfig,
       MOCK_GOLFER_BUCKETS,
       // no golferBucketNumber
@@ -467,7 +461,7 @@ describe('canAddGolfer', () => {
   });
 
   it('returns reason as undefined when addition is allowed', () => {
-    const result = canAddGolfer(8, [], MOCK_AVAILABLE_GOLFERS, rvccConfig, null);
+    const result = canAddGolfer(8, [], rvccConfig, null);
     expect(result.allowed).toBe(true);
     expect(result.reason).toBeUndefined();
   });

@@ -7,6 +7,18 @@ import type {
   EntrySubmissionResponse,
   LeaderboardData,
   EntryLookupResult,
+  PoolLockStatus,
+  PoolEventsPage,
+  PoolEventType,
+  TournamentOption,
+  CreatePoolRequest,
+  PoolEntriesResponse,
+  ClubBranding,
+  ClubBilling,
+  ReferralInfo,
+  ReferralCreditResponse,
+  AdminStats,
+  AdminPollHealth,
 } from '../types/domain';
 import { API_ENDPOINTS } from './types';
 
@@ -53,7 +65,10 @@ export class HttpApiClient implements ApiClient {
       body: JSON.stringify(request),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => null);
+      const err = await res.json().catch((parseErr: unknown) => {
+        console.error('[HttpApiClient] Failed to parse submitEntry error body:', parseErr);
+        return null;
+      });
       const msg = err?.detail
         ? typeof err.detail === 'string'
           ? err.detail
@@ -80,7 +95,6 @@ export class HttpApiClient implements ApiClient {
     if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.status}`);
     const data = await res.json();
 
-    // Map backend "leaderboard" → frontend "standings"
     const standings = (data.leaderboard ?? []).map((entry: Record<string, unknown>) => ({
       rank: entry.rank ?? null,
       is_tied: entry.is_tied ?? false,
@@ -92,7 +106,7 @@ export class HttpApiClient implements ApiClient {
       qualified_golfers_count: entry.qualified_golfers_count ?? 0,
       counted_golfers_count: entry.counted_golfers_count ?? 0,
       is_complete: entry.is_complete ?? false,
-      picks: ((entry.picks ?? entry.players) as Record<string, unknown>[] ?? []).map((p: Record<string, unknown>) => ({
+      picks: ((entry.picks as Record<string, unknown>[]) ?? []).map((p: Record<string, unknown>) => ({
         dg_id: p.dg_id,
         player_name: p.player_name,
         total_score: p.total_score ?? null,
@@ -110,7 +124,6 @@ export class HttpApiClient implements ApiClient {
       })),
     }));
 
-    // Find latest last_scored_at from standings
     const scoredAts = (data.leaderboard ?? [])
       .map((e: Record<string, unknown>) => e.last_scored_at)
       .filter(Boolean);
@@ -124,13 +137,185 @@ export class HttpApiClient implements ApiClient {
     };
   }
 
+  async getLockStatus(poolId: number): Promise<PoolLockStatus> {
+    const res = await fetch(API_ENDPOINTS.lockStatus(poolId));
+    if (!res.ok) throw new Error(`Failed to fetch lock status: ${res.status}`);
+    return res.json();
+  }
+
+  async getPoolEvents(poolId: number, page = 1, pageSize = 50): Promise<PoolEventsPage> {
+    const url = `${API_ENDPOINTS.poolEvents(poolId)}?page=${page}&page_size=${pageSize}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch pool events: ${res.status}`);
+    const data = await res.json();
+    return {
+      pool_id: data.pool_id ?? poolId,
+      events: (data.events ?? []).map((e: Record<string, unknown>) => ({
+        id: e.id,
+        pool_id: e.pool_id,
+        event_type: e.event_type as PoolEventType,
+        actor_id: e.actor_id as string | null ?? null,
+        payload: (e.payload ?? {}) as Record<string, unknown>,
+        created_at: e.created_at as string,
+      })),
+      total: data.total ?? 0,
+      page: data.page ?? page,
+      page_size: data.page_size ?? pageSize,
+    };
+  }
+
+  async getTournaments(): Promise<TournamentOption[]> {
+    const res = await fetch(API_ENDPOINTS.tournaments());
+    if (!res.ok) throw new Error(`Failed to fetch tournaments: ${res.status}`);
+    const data = await res.json();
+    return (data.tournaments ?? data).map((t: Record<string, unknown>) => ({
+      id: t.id,
+      name: t.name,
+      year: t.year,
+    }));
+  }
+
+  async createPool(request: CreatePoolRequest): Promise<PoolSummary> {
+    const res = await fetch(API_ENDPOINTS.createPool(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch((parseErr: unknown) => {
+        console.error('[HttpApiClient] Failed to parse createPool error body:', parseErr);
+        return null;
+      });
+      if (res.status === 402) {
+        throw Object.assign(
+          new Error('A Stripe subscription is required to create additional pools.'),
+          { code: err?.code ?? 'billing_required', status: 402 },
+        );
+      }
+      const msg =
+        err?.detail
+          ? typeof err.detail === 'string'
+            ? err.detail
+            : JSON.stringify(err.detail)
+          : `Pool creation failed: ${res.status}`;
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  async getPoolByToken(clubCode: ClubCode, poolToken: string): Promise<PoolSummary | null> {
+    const res = await fetch(API_ENDPOINTS.poolByToken(clubCode, poolToken));
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Failed to fetch pool by token: ${res.status}`);
+    return res.json();
+  }
+
+  async getPoolEntries(poolId: number): Promise<PoolEntriesResponse> {
+    const res = await fetch(API_ENDPOINTS.poolEntries(poolId));
+    if (!res.ok) throw new Error(`Failed to fetch entries: ${res.status}`);
+    const data = await res.json();
+    const entries = (data.entries ?? []).map((e: Record<string, unknown>) => ({
+      entry_id: e.id ?? e.entry_id,
+      entry_name: e.entry_name ?? '',
+      email: (e.email as string | null) ?? null,
+      submitted_at: (e.submitted_at as string) ?? '',
+      picks: (e.picks as Record<string, unknown>[] ?? []).map((p: Record<string, unknown>) => ({
+        dg_id: p.dg_id,
+        player_name: p.player_name ?? '',
+        pick_slot: p.pick_slot,
+        bucket_number: p.bucket_number as number | undefined,
+      })),
+    }));
+    return { pool_id: data.pool_id ?? poolId, entries, count: data.count ?? entries.length };
+  }
+
+  async downloadPoolEntriesCsv(poolId: number): Promise<Blob> {
+    const res = await fetch(API_ENDPOINTS.poolEntriesCsv(poolId));
+    if (!res.ok) throw new Error(`CSV download failed: ${res.status}`);
+    return res.blob();
+  }
+
+  async getClubBranding(clubCode: ClubCode): Promise<ClubBranding> {
+    const res = await fetch(API_ENDPOINTS.clubBranding(clubCode));
+    if (!res.ok) throw new Error(`Failed to fetch branding: ${res.status}`);
+    return res.json();
+  }
+
+  async updateClubBranding(clubCode: ClubCode, branding: Partial<ClubBranding>): Promise<ClubBranding> {
+    const res = await fetch(API_ENDPOINTS.clubBranding(clubCode), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(branding),
+    });
+    if (!res.ok) throw new Error(`Failed to update branding: ${res.status}`);
+    return res.json();
+  }
+
+  async getClubBilling(clubCode: ClubCode): Promise<ClubBilling> {
+    const res = await fetch(API_ENDPOINTS.clubBilling(clubCode));
+    if (!res.ok) throw new Error(`Failed to fetch billing: ${res.status}`);
+    return res.json();
+  }
+
+  async createBillingPortalSession(clubCode: ClubCode): Promise<{ url: string }> {
+    const res = await fetch(API_ENDPOINTS.billingPortal(clubCode), { method: 'POST' });
+    if (!res.ok) throw new Error(`Failed to create billing portal session: ${res.status}`);
+    return res.json();
+  }
+
+  async getClubPools(clubCode: ClubCode): Promise<PoolSummary[]> {
+    const res = await fetch(API_ENDPOINTS.clubPools(clubCode));
+    if (!res.ok) throw new Error(`Failed to fetch club pools: ${res.status}`);
+    const data = await res.json();
+    return data.pools ?? [];
+  }
+
+  async getReferralInfo(clubCode: ClubCode): Promise<ReferralInfo> {
+    const res = await fetch(API_ENDPOINTS.referralInfo(clubCode));
+    if (!res.ok) throw new Error(`Failed to fetch referral info: ${res.status}`);
+    return res.json();
+  }
+
+  async applyReferralCredit(referralCode: string, referredClubCode: ClubCode): Promise<ReferralCreditResponse> {
+    const res = await fetch(API_ENDPOINTS.referralCredit(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referral_code: referralCode, referred_club_code: referredClubCode }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch((parseErr: unknown) => {
+        console.error('[HttpApiClient] Failed to parse applyReferralCredit error body:', parseErr);
+        return null;
+      });
+      throw Object.assign(
+        new Error(err?.detail ?? `Referral credit failed: ${res.status}`),
+        { code: err?.code ?? 'REFERRAL_ERROR', status: res.status },
+      );
+    }
+    return res.json();
+  }
+
+  async getAdminStats(): Promise<AdminStats> {
+    const res = await fetch(API_ENDPOINTS.adminStats());
+    if (!res.ok) throw new Error(`Failed to fetch admin stats: ${res.status}`);
+    return res.json();
+  }
+
+  async getPollHealth(): Promise<AdminPollHealth> {
+    const res = await fetch(API_ENDPOINTS.pollHealth());
+    if (!res.ok) throw new Error(`Failed to fetch poll health: ${res.status}`);
+    return res.json();
+  }
+
   async lookupEntries(poolId: number, email: string): Promise<EntryLookupResult> {
     const url = `${API_ENDPOINTS.lookupEntries(poolId)}?email=${encodeURIComponent(email)}`;
     const res = await fetch(url);
+    if (res.status === 404) {
+      throw Object.assign(new Error(`No entry found for ${email}`), { status: 404 });
+    }
     if (!res.ok) throw new Error(`Lookup failed: ${res.status}`);
     const data = await res.json();
 
-    // Map backend entry shape to frontend EntryLookupEntry
     const entries = (data.entries ?? []).map((e: Record<string, unknown>) => ({
       entry_id: e.id,
       entry_name: e.entry_name ?? '',

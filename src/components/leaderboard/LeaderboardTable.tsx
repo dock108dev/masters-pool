@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { LeaderboardData, ClubConfig } from '../../types/domain';
 import { GolferCell } from './GolferCell';
 import { EmptyState } from '../common/EmptyState';
@@ -69,7 +70,11 @@ export function LeaderboardTable({ data, clubConfig }: LeaderboardTableProps) {
                   className={isQualified ? 'entry-qualified' : 'entry-not-qualified'}
                 >
                   <td className="col-pos">{rankDisplay}</td>
-                  <td className="col-entry">{standing.entry_name}</td>
+                  <td className="col-entry">
+                    <Link to={`/${clubConfig.code}/leaderboard/entry/${standing.entry_id}`}>
+                      {standing.entry_name}
+                    </Link>
+                  </td>
                   <td className="col-total">{formatScore(standing.aggregate_score)}</td>
                   {showStatus && (
                     <td className="col-status">

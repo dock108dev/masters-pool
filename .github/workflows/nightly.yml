@@ -1,0 +1,82 @@
+name: Nightly Staging Tests
+
+on:
+  schedule:
+    # 03:00 UTC daily
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  # ────────────────────────────────────────────────────────
+  # Full test suite + build against mock fixture snapshot
+  # ────────────────────────────────────────────────────────
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate standings snapshot
+        run: node --experimental-strip-types scripts/export-standings.ts
+
+      - name: Download previous standings snapshot
+        id: download-prev
+        uses: actions/download-artifact@v4
+        with:
+          name: standings-snapshot
+          path: prev-snapshot/
+        continue-on-error: true
+
+      - name: Diff standings against previous run
+        id: standings-diff
+        run: |
+          if [ -f prev-snapshot/standings-snapshot.json ]; then
+            if diff -u prev-snapshot/standings-snapshot.json standings-snapshot.json > standings.diff; then
+              echo "diff_found=false" >> "$GITHUB_OUTPUT"
+              echo "No standings drift detected."
+            else
+              echo "diff_found=true" >> "$GITHUB_OUTPUT"
+              echo "::warning::Standings drift detected vs previous nightly run"
+              cat standings.diff
+            fi
+          else
+            echo "diff_found=false" >> "$GITHUB_OUTPUT"
+            echo "No previous snapshot found — baseline established."
+          fi
+
+      - name: Upload standings snapshot as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: standings-snapshot
+          path: standings-snapshot.json
+          retention-days: 7
+          overwrite: true
+
+      - name: Fail on unexpected standings drift
+        if: steps.standings-diff.outputs.diff_found == 'true'
+        run: |
+          echo "Standings snapshot changed unexpectedly. Review standings.diff above."
+          echo "If this change is intentional, delete the 'standings-snapshot' artifact"
+          echo "and re-run this workflow to establish a new baseline."
+          exit 1

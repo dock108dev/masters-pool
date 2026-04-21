@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type {
   ClubConfig,
@@ -6,10 +6,12 @@ import type {
   GolferBucket,
   EntrySubmissionResponse,
   PoolFieldResponse,
+  PoolLockStatus,
 } from '../types/domain';
 import { useApi } from '../hooks/useApi';
 import { apiClient } from '../api/client';
-import { validateEntryForm } from '../utils/validation';
+import { validateEntryForm, validateSlotSelections } from '../utils/validation';
+import { fieldToGolfers, fieldToBuckets } from '../utils/fieldHelpers';
 import { GolferPicker } from '../components/entry/GolferPicker';
 import { BucketPicker } from '../components/entry/BucketPicker';
 import { LoadingState } from '../components/common/LoadingState';
@@ -19,40 +21,18 @@ interface EntryPageProps {
   clubConfig: ClubConfig;
 }
 
-/** Sort by last name: handles "Last, First" and "First Last" formats */
-function lastNameSort(a: AvailableGolfer, b: AvailableGolfer): number {
-  const lastA = a.player_name.includes(',')
-    ? a.player_name.split(',')[0].trim()
-    : a.player_name.split(' ').slice(-1)[0] ?? '';
-  const lastB = b.player_name.includes(',')
-    ? b.player_name.split(',')[0].trim()
-    : b.player_name.split(' ').slice(-1)[0] ?? '';
-  return lastA.localeCompare(lastB);
-}
-
-function fieldToGolfers(field: PoolFieldResponse): AvailableGolfer[] {
-  if (field.players) return [...field.players].sort(lastNameSort);
-  if (field.buckets) return field.buckets.flatMap((b) => b.players).sort(lastNameSort);
-  return [];
-}
-
-function fieldToBuckets(field: PoolFieldResponse): GolferBucket[] | null {
-  if (!field.buckets) return null;
-  return field.buckets.map((b) => ({
-    bucket_number: b.bucket_number,
-    label: b.label,
-    golfers: [...b.players].sort(lastNameSort),
-  }));
-}
-
-// Write-in "Other" golfers use negative IDs to distinguish from real dg_ids
-let nextOtherId = -1;
-
 export function EntryPage({ clubConfig }: EntryPageProps) {
   const navigate = useNavigate();
+  // Negative IDs distinguish write-in "Other" golfers from real dg_ids
+  const nextOtherIdRef = useRef(-1);
   const [email, setEmail] = useState('');
   const [entryName, setEntryName] = useState('');
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [slotSelections, setSlotSelections] = useState<(number | null)[]>(() =>
+    Array<null>(clubConfig.pickCount).fill(null)
+  );
+  const [slotErrors, setSlotErrors] = useState<(string | null)[]>(() =>
+    Array<null>(clubConfig.pickCount).fill(null)
+  );
   const [otherName, setOtherName] = useState('');
   const [otherPlayers, setOtherPlayers] = useState<{ id: number; name: string }[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -70,27 +50,61 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
       [pool?.id ?? 0]
     );
 
+  const { data: lockStatus, loading: lockStatusLoading } = useApi<PoolLockStatus>(
+    () =>
+      pool
+        ? apiClient.getLockStatus(pool.id)
+        : Promise.resolve({ locked: false, locked_at: null, lock_time: null }),
+    [pool?.id ?? 0],
+  );
+
   const golfers: AvailableGolfer[] = field ? fieldToGolfers(field) : [];
   const buckets: GolferBucket[] | null = field ? fieldToBuckets(field) : null;
+
+  // Merge other players (negative IDs) so slots can display their names
+  const allGolfers: AvailableGolfer[] = [
+    ...golfers,
+    ...otherPlayers.map((p): AvailableGolfer => ({ dg_id: p.id, player_name: p.name })),
+  ];
+
+  const selectedIds = slotSelections.filter((id): id is number => id !== null);
   const isFull = selectedIds.length >= clubConfig.pickCount;
 
-  const handleSelect = (dgId: number) => {
-    setSelectedIds((prev) => [...prev, dgId]);
-    setValidationErrors([]);
-  };
-
-  const handleDeselect = (dgId: number) => {
-    setSelectedIds((prev) => prev.filter((id) => id !== dgId));
-    setOtherPlayers((prev) => prev.filter((p) => p.id !== dgId));
+  const handleSlotChange = (slotIndex: number, dgId: number | null) => {
+    const currentId = slotSelections[slotIndex];
+    if (currentId !== null && currentId < 0 && dgId !== currentId) {
+      setOtherPlayers((prev) => prev.filter((p) => p.id !== currentId));
+    }
+    setSlotSelections((prev) => {
+      const next = [...prev];
+      next[slotIndex] = dgId;
+      return next;
+    });
+    setSlotErrors((prev) => {
+      const next = [...prev];
+      next[slotIndex] = null;
+      return next;
+    });
     setValidationErrors([]);
   };
 
   const handleAddOther = () => {
     const trimmed = otherName.trim();
     if (!trimmed) return;
-    const id = nextOtherId--;
+    const firstEmptySlot = slotSelections.findIndex((s) => s === null);
+    if (firstEmptySlot === -1) return;
+    const id = nextOtherIdRef.current--;
     setOtherPlayers((prev) => [...prev, { id, name: trimmed }]);
-    setSelectedIds((prev) => [...prev, id]);
+    setSlotSelections((prev) => {
+      const next = [...prev];
+      next[firstEmptySlot] = id;
+      return next;
+    });
+    setSlotErrors((prev) => {
+      const next = [...prev];
+      next[firstEmptySlot] = null;
+      return next;
+    });
     setOtherName('');
     setValidationErrors([]);
   };
@@ -98,6 +112,9 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+
+    const newSlotErrors = validateSlotSelections(slotSelections);
+    setSlotErrors(newSlotErrors);
 
     const result = validateEntryForm(
       email,
@@ -107,28 +124,27 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
       clubConfig.useBuckets ? (buckets ?? []) : null,
     );
 
-    if (!result.valid) {
+    if (!result.valid || newSlotErrors.some((e) => e !== null)) {
       setValidationErrors(result.errors);
       return;
     }
 
     setSubmitting(true);
     try {
-      // Build picks array with pick_slot (1-indexed) and optional bucket_number
-      const picks = selectedIds.map((dgId, index) => {
-        const pick_slot = index + 1;
-        const other = otherPlayers.find((p) => p.id === dgId);
-        if (other) {
-          return { dg_id: 0, pick_slot, player_name: other.name };
-        }
-        const golfer = golfers.find((g) => g.dg_id === dgId);
-        const player_name = golfer?.player_name;
-        if (buckets) {
-          const bucket = buckets.find((b) => b.golfers.some((g) => g.dg_id === dgId));
-          return { dg_id: dgId, pick_slot, player_name, bucket_number: bucket?.bucket_number };
-        }
-        return { dg_id: dgId, pick_slot, player_name };
-      });
+      const picks = slotSelections
+        .map((dgId, index) => ({ dgId, pick_slot: index + 1 }))
+        .filter((p): p is { dgId: number; pick_slot: number } => p.dgId !== null)
+        .map(({ dgId, pick_slot }) => {
+          const other = otherPlayers.find((p) => p.id === dgId);
+          if (other) return { dg_id: 0, pick_slot, player_name: other.name };
+          const golfer = golfers.find((g) => g.dg_id === dgId);
+          const player_name = golfer?.player_name;
+          if (buckets) {
+            const bucket = buckets.find((b) => b.golfers.some((g) => g.dg_id === dgId));
+            return { dg_id: dgId, pick_slot, player_name, bucket_number: bucket?.bucket_number };
+          }
+          return { dg_id: dgId, pick_slot, player_name };
+        });
 
       const response: EntrySubmissionResponse = await apiClient.submitEntry(pool!.id, {
         email,
@@ -153,9 +169,25 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
     );
   }
 
-  if (poolLoading || fieldLoading) return <LoadingState message="Loading entry form..." />;
+  if (poolLoading || fieldLoading || lockStatusLoading) return <LoadingState message="Loading entry form..." />;
   if (fieldError) return <ErrorState message={fieldError} onRetry={refetchField} />;
   if (!pool) return <ErrorState message="No active pool found." />;
+
+  if (lockStatus?.locked) {
+    return (
+      <div className="page entry-page">
+        <div className="pool-locked-banner" role="alert" data-testid="pool-locked-banner">
+          <h2>Pool is Locked</h2>
+          <p>
+            Entry submissions are closed.
+            {lockStatus.locked_at
+              ? ` The pool was locked on ${new Date(lockStatus.locked_at).toLocaleString()}.`
+              : ''}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page entry-page">
@@ -192,27 +224,27 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
         {clubConfig.useBuckets && buckets && buckets.length > 0 ? (
           <BucketPicker
             buckets={buckets}
-            selectedIds={selectedIds}
+            slotSelections={slotSelections}
             clubConfig={clubConfig}
-            onSelect={handleSelect}
-            onDeselect={handleDeselect}
+            onSlotChange={handleSlotChange}
+            slotErrors={slotErrors}
           />
         ) : (
           golfers.length > 0 && (
             <GolferPicker
-              golfers={golfers}
-              selectedIds={selectedIds}
+              golfers={allGolfers}
+              slotSelections={slotSelections}
               clubConfig={clubConfig}
               buckets={null}
-              onSelect={handleSelect}
-              onDeselect={handleDeselect}
+              onSlotChange={handleSlotChange}
+              slotErrors={slotErrors}
             />
           )
         )}
 
         <div className="other-player-section" data-testid="other-player-section">
           <h4>Other</h4>
-          <p className="picker-instruction">Don't see your player? Type their name below.</p>
+          <p className="picker-instruction">Don&apos;t see your player? Type their name below.</p>
           {otherPlayers.length > 0 && (
             <div className="other-player-list">
               {otherPlayers.map((p) => (
@@ -220,7 +252,10 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
                   key={p.id}
                   type="button"
                   className="golfer-option selected"
-                  onClick={() => handleDeselect(p.id)}
+                  onClick={() => {
+                    const slotIndex = slotSelections.findIndex((s) => s === p.id);
+                    if (slotIndex !== -1) handleSlotChange(slotIndex, null);
+                  }}
                   data-testid={`other-player-${p.id}`}
                 >
                   <span className="golfer-option-name">{p.name}</span>
@@ -241,7 +276,7 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
               type="button"
               className="btn btn-secondary"
               onClick={handleAddOther}
-              disabled={!otherName.trim()}
+              disabled={!otherName.trim() || !slotSelections.some((s) => s === null)}
               data-testid="add-other-player"
             >
               Add
@@ -265,7 +300,6 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
           </div>
         )}
 
-        {/* Inline submit button (visible above the fold / non-mobile) */}
         <button
           type="submit"
           className="btn btn-primary entry-submit-inline"
@@ -276,7 +310,6 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
         </button>
       </form>
 
-      {/* Sticky bottom banner — pick counter that becomes submit button */}
       <div
         className={`pick-banner ${isFull ? 'pick-banner-ready' : ''}`}
         data-testid="pick-banner"

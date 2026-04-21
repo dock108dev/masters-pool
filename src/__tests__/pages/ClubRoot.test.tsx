@@ -1,0 +1,111 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MockApiClient } from '../../api/mock/adapters';
+import { ClubRoot } from '../../pages/ClubRoot';
+
+// Mock Clerk so ClubRoot tests run without a real Clerk environment
+vi.mock('@clerk/clerk-react', () => ({
+  SignedOut: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+// Mock useClubConfig to return a known club
+vi.mock('../../hooks/useClubConfig', () => ({
+  useClubConfig: () => ({
+    clubConfig: {
+      code: 'rvcc',
+      name: 'RVCC',
+      shortName: 'RVCC',
+      pickCount: 6,
+      cutMinimum: 3,
+      countedScores: 4,
+      useBuckets: false,
+      allowSelfServiceEntry: true,
+      rulesDescription: [],
+    },
+    error: null,
+  }),
+}));
+
+// Mock apiClient so ClubRoot's pool fetch doesn't make real HTTP calls.
+// Fake timers are used to prevent async state updates from escaping the test.
+let activeClient = new MockApiClient(0);
+vi.mock('../../api/client', () => ({
+  get apiClient() {
+    return activeClient;
+  },
+}));
+
+function renderAt(path: string) {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/:clubCode/*" element={<ClubRoot />} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
+describe('ClubRoot', () => {
+  beforeEach(() => {
+    activeClient = new MockApiClient(0);
+    // Fake timers keep async pool/lock fetches from completing during synchronous tests,
+    // preventing act() warnings from state updates that escape test boundaries.
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  it('does not show coordinator sign-in link on public routes', () => {
+    renderAt('/rvcc/leaderboard');
+    expect(screen.queryByTestId('coordinator-signin-bar')).not.toBeInTheDocument();
+  });
+
+  it('shows coordinator sign-in link on admin paths', () => {
+    renderAt('/rvcc/admin');
+    expect(screen.getByTestId('coordinator-signin-bar')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /coordinator sign-in/i })).toBeInTheDocument();
+  });
+
+  it('coordinator sign-in link points to admin/sign-in path', () => {
+    renderAt('/rvcc/admin');
+    const link = screen.getByRole('link', { name: /coordinator sign-in/i });
+    expect(link).toHaveAttribute('href', '/rvcc/admin/sign-in');
+  });
+
+  it('does not show coordinator sign-in link on root path', () => {
+    renderAt('/rvcc');
+    expect(screen.queryByTestId('coordinator-signin-bar')).not.toBeInTheDocument();
+  });
+
+  describe('branding CSS custom properties', () => {
+    afterEach(() => {
+      document.documentElement.style.removeProperty('--club-primary');
+      document.documentElement.style.removeProperty('--club-accent');
+    });
+
+    it('sets --club-primary when branding returns a primary_color', async () => {
+      vi.useRealTimers();
+      vi.spyOn(activeClient, 'getClubBranding').mockResolvedValue({
+        logo_url: null,
+        primary_color: '#123456',
+        accent_color: null,
+      });
+      renderAt('/rvcc/leaderboard');
+      await waitFor(() => {
+        expect(document.documentElement.style.getPropertyValue('--club-primary')).toBe('#123456');
+      });
+    });
+
+    it('applies default colors when branding fetch fails', async () => {
+      vi.useRealTimers();
+      vi.spyOn(activeClient, 'getClubBranding').mockRejectedValue(new Error('not found'));
+      renderAt('/rvcc/leaderboard');
+      await waitFor(() => {
+        expect(document.documentElement.style.getPropertyValue('--club-primary')).toBe('#1e3a5f');
+        expect(document.documentElement.style.getPropertyValue('--club-accent')).toBe('#c9a84c');
+      });
+    });
+  });
+});

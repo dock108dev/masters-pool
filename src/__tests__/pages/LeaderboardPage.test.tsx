@@ -1,12 +1,17 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { LeaderboardPage } from '../../pages/LeaderboardPage';
 import { getClubConfig } from '../../config/clubs';
+import { MOCK_PRE_TOURNAMENT_RVCC_POOL, MOCK_EMPTY_LEADERBOARD } from '../../api/mock/data';
+
+let activeClient: MockApiClient = new MockApiClient(0);
 
 vi.mock('../../api/client', () => ({
-  apiClient: new MockApiClient(0),
+  get apiClient() {
+    return activeClient;
+  },
 }));
 
 const rvccConfig = getClubConfig('rvcc');
@@ -24,17 +29,12 @@ function renderLeaderboardPage(clubConfig = rvccConfig, path = '/rvcc/leaderboar
 
 describe('LeaderboardPage', () => {
   beforeEach(() => {
+    activeClient = new MockApiClient(0);
     vi.useFakeTimers({ now: new Date('2026-04-09T13:00:00Z'), shouldAdvanceTime: true });
   });
 
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  it('shows locked message before tournament starts', () => {
-    vi.setSystemTime(new Date('2026-04-08T12:00:00Z'));
-    renderLeaderboardPage();
-    expect(screen.getByText(/leaderboard will be available/i)).toBeInTheDocument();
   });
 
   it('renders loading state initially', () => {
@@ -75,5 +75,59 @@ describe('LeaderboardPage', () => {
     expect(screen.getByText('Pos')).toBeInTheDocument();
     expect(screen.getByText('Entry')).toBeInTheDocument();
     expect(screen.getByText('Total')).toBeInTheDocument();
+  });
+
+  it('shows Last updated timestamp after data loads', async () => {
+    renderLeaderboardPage();
+    await screen.findByTestId('leaderboard-table');
+    expect(screen.getByTestId('leaderboard-status')).toBeInTheDocument();
+    expect(screen.getByText(/Last updated/i)).toBeInTheDocument();
+  });
+
+  it('does not show stale badge immediately after load', async () => {
+    renderLeaderboardPage();
+    await screen.findByTestId('leaderboard-table');
+    expect(screen.queryByTestId('leaderboard-stale-badge')).not.toBeInTheDocument();
+  });
+
+  it('shows stale badge when data is older than 60 seconds', async () => {
+    renderLeaderboardPage();
+    await screen.findByTestId('leaderboard-table');
+
+    // Future leaderboard fetches fail so lastUpdatedAt stays at load time
+    vi.spyOn(activeClient, 'getLeaderboard').mockRejectedValue(new Error('fetch failed'));
+
+    // Advance past stale threshold (60s) + stale check interval (10s)
+    await act(async () => {
+      vi.advanceTimersByTime(71_000);
+    });
+
+    expect(screen.getByTestId('leaderboard-stale-badge')).toBeInTheDocument();
+    expect(screen.getByText('Data may be stale')).toBeInTheDocument();
+  });
+
+  it('shows pre-tournament banner when pool scoring is not enabled', async () => {
+    vi.spyOn(activeClient, 'getActivePool').mockResolvedValue(MOCK_PRE_TOURNAMENT_RVCC_POOL);
+    vi.spyOn(activeClient, 'getLeaderboard').mockResolvedValue(MOCK_EMPTY_LEADERBOARD);
+    renderLeaderboardPage();
+    expect(await screen.findByTestId('pre-tournament-banner')).toBeInTheDocument();
+    expect(screen.getByText("Tournament hasn't started yet")).toBeInTheDocument();
+  });
+
+  it('shows error banner after 3 consecutive fetch failures', async () => {
+    renderLeaderboardPage();
+    await screen.findByTestId('leaderboard-table');
+
+    vi.spyOn(activeClient, 'getLeaderboard').mockRejectedValue(new Error('network error'));
+
+    // 3 poll intervals at 15s each = 46s to be safe
+    await act(async () => {
+      vi.advanceTimersByTime(46_000);
+    });
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/Unable to update/i)).toBeInTheDocument();
+    // Leaderboard data still visible
+    expect(screen.getByTestId('leaderboard-table')).toBeInTheDocument();
   });
 });

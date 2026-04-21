@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MockApiClient } from '../../api/mock/adapters';
+import { MockApiClient, MOCK_LOCKED_AT } from '../../api/mock/adapters';
 import {
   MOCK_RVCC_POOL,
   MOCK_CRESTMONT_POOL,
@@ -439,5 +439,69 @@ describe('MockApiClient.lookupEntries', () => {
     const rvcc = await client.lookupEntries(MOCK_RVCC_POOL.id, 'x@x.com');
     const crestmont = await client.lookupEntries(MOCK_CRESTMONT_POOL.id, 'x@x.com');
     expect(rvcc.entries).toEqual(crestmont.entries);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getLockStatus
+// ---------------------------------------------------------------------------
+
+describe('MockApiClient.getLockStatus', () => {
+  it('returns locked=false for an unlocked pool', async () => {
+    const status = await client.getLockStatus(MOCK_RVCC_POOL.id);
+    expect(status.locked).toBe(false);
+    expect(status.locked_at).toBeNull();
+  });
+
+  it('returns locked=true with locked_at for a pool configured as locked', async () => {
+    const lockedClient = new MockApiClient(0, [MOCK_RVCC_POOL.id]);
+    const status = await lockedClient.getLockStatus(MOCK_RVCC_POOL.id);
+    expect(status.locked).toBe(true);
+    expect(status.locked_at).toBe(MOCK_LOCKED_AT);
+  });
+
+  it('unlocked pool id returns unlocked even when other pools are locked', async () => {
+    const lockedClient = new MockApiClient(0, [MOCK_CRESTMONT_POOL.id]);
+    const status = await lockedClient.getLockStatus(MOCK_RVCC_POOL.id);
+    expect(status.locked).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// submitEntry — pool locked (integration: 409 path)
+// ---------------------------------------------------------------------------
+
+describe('MockApiClient.submitEntry (locked pool)', () => {
+  const baseRequest = {
+    email: 'tester@example.com',
+    entry_name: 'Test Entry',
+    picks: [{ dg_id: 18417, pick_slot: 1 }],
+  };
+
+  it('throws when the pool is locked', async () => {
+    const lockedClient = new MockApiClient(0, [MOCK_RVCC_POOL.id]);
+    await expect(lockedClient.submitEntry(MOCK_RVCC_POOL.id, baseRequest)).rejects.toThrow();
+  });
+
+  it('thrown error has machine-readable code POOL_LOCKED', async () => {
+    const lockedClient = new MockApiClient(0, [MOCK_RVCC_POOL.id]);
+    const err = await lockedClient
+      .submitEntry(MOCK_RVCC_POOL.id, baseRequest)
+      .catch((e: unknown) => e);
+    expect((err as { code: string }).code).toBe('POOL_LOCKED');
+  });
+
+  it('thrown error has status 409', async () => {
+    const lockedClient = new MockApiClient(0, [MOCK_RVCC_POOL.id]);
+    const err = await lockedClient
+      .submitEntry(MOCK_RVCC_POOL.id, baseRequest)
+      .catch((e: unknown) => e);
+    expect((err as { status: number }).status).toBe(409);
+  });
+
+  it('unlocked pool id still succeeds even when another pool is locked', async () => {
+    const lockedClient = new MockApiClient(0, [MOCK_CRESTMONT_POOL.id]);
+    const res = await lockedClient.submitEntry(MOCK_RVCC_POOL.id, baseRequest);
+    expect(res.confirmationCode).toMatch(/^CONF-/);
   });
 });

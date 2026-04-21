@@ -1,18 +1,20 @@
 # API Contracts
 
-Typed contracts between the masters-pool-web frontend and the sports-data-admin backend Golf Pools API. All types are defined in `src/types/domain.ts`.
+Typed contracts between the masters-pool-web frontend and the sports-data-admin backend Golf Pools API. All types are defined in `src/types/domain.ts`. All endpoints are defined in `src/api/types.ts`.
 
 ## Authentication
 
-All endpoints require `X-API-Key` header. The frontend does not handle authentication beyond passing the key.
+All endpoints require an `X-API-Key` header. In production, nginx injects this header via the `SPORTS_API_KEY` env var — the browser never handles the key. In dev, the Vite proxy injects it.
+
+Coordinator endpoints also accept a Clerk JWT via `Authorization: Bearer <token>`. The backend validates org membership server-side; the frontend never derives club access from the JWT payload.
 
 ## Base URL
 
-Configured in `src/api/types.ts` as `API_BASE_URL`. Currently `/api` (relative, expects a proxy or same-origin deployment).
+`/api` (relative — resolved via nginx proxy in production, Vite proxy in dev).
 
 ---
 
-## Endpoints
+## Pool Endpoints
 
 ### Get Active Pool
 
@@ -20,38 +22,46 @@ Configured in `src/api/types.ts` as `API_BASE_URL`. Currently `/api` (relative, 
 GET /api/golf/pools?club_code={clubCode}&active_only=true
 ```
 
-Returns the first pool matching the club code with status in (`open`, `locked`, `live`).
+Returns the first pool for the club with status in `open | locked | live`. Returns `null` when no active pool exists.
 
-**Response:**
-```typescript
-{
-  pools: PoolSummary[];
-  count: number;
-}
-```
+**Response:** `PoolSummary | null`
 
 ```typescript
 interface PoolSummary {
   id: number;
-  code: string;                    // e.g., "masters-2026-rvcc"
+  code: string;                    // e.g. "masters-2026-rvcc"
   name: string;
-  club_code: ClubCode;            // "rvcc" | "crestmont"
+  club_code: ClubCode;             // "rvcc" | "crestmont"
   tournament_id: number;
-  status: PoolStatus;             // "draft" | "open" | "locked" | "live" | "final" | "archived"
-  entry_deadline: string;         // ISO 8601
+  status: PoolStatus;              // "draft" | "open" | "locked" | "live" | "final" | "archived"
+  entry_deadline: string;          // ISO 8601
   max_entries_per_email: number;
   scoring_enabled: boolean;
   rules_json: PoolRules;
+  pool_token?: string;             // Present when pool is published (used for public entry links)
+  entry_count?: number;            // Present in club pool listing responses
 }
 
 interface PoolRules {
-  variant: string;                // "rvcc" | "crestmont"
-  pick_count: number;             // 7 for RVCC, 6 for Crestmont
-  count_best: number;             // 5 for RVCC, 4 for Crestmont
-  min_cuts_to_qualify: number;    // 5 for RVCC, 4 for Crestmont
+  variant: string;                 // "rvcc" | "crestmont"
+  pick_count: number;
+  count_best: number;
+  min_cuts_to_qualify: number;
   uses_buckets: boolean;
+  wd_score_penalty?: number;       // Strokes added to WD player's score (absent = WD unscored)
+  dq_score_penalty?: number;       // Strokes added to DQ player's score (DQ never counts)
 }
 ```
+
+---
+
+### Get Pool Detail
+
+```
+GET /api/golf/pools/{poolId}
+```
+
+**Response:** `PoolSummary`
 
 ---
 
@@ -60,8 +70,6 @@ interface PoolRules {
 ```
 GET /api/golf/pools/{poolId}/field
 ```
-
-Returns available golfers for pick selection. Shape differs by variant.
 
 **RVCC response (flat list):**
 ```typescript
@@ -79,17 +87,15 @@ Returns available golfers for pick selection. Shape differs by variant.
   variant: "crestmont";
   buckets: FieldBucket[];
 }
-```
 
-```typescript
 interface FieldPlayer {
-  dg_id: number;                  // DataGolf player ID
+  dg_id: number;           // DataGolf player ID — stable identifier across all endpoints
   player_name: string;
 }
 
 interface FieldBucket {
-  bucket_number: number;          // 1-indexed (1-6)
-  label: string;                  // e.g., "Tier 1"
+  bucket_number: number;   // 1-indexed (1–6 for Crestmont)
+  label: string;           // e.g. "Group 1"
   players: FieldPlayer[];
 }
 ```
@@ -104,7 +110,7 @@ POST /api/golf/pools/{poolId}/entries
 
 **Request:**
 ```typescript
-{
+interface EntrySubmissionRequest {
   email: string;
   entry_name: string;
   picks: EntryPick[];
@@ -112,29 +118,29 @@ POST /api/golf/pools/{poolId}/entries
 
 interface EntryPick {
   dg_id: number;
-  pick_slot: number;              // 1-indexed position
-  bucket_number?: number;         // Required for Crestmont
+  pick_slot: number;         // 1-indexed position
+  bucket_number?: number;    // Required for Crestmont bucket pools
+  player_name?: string;      // Required when dg_id < 0 (write-in "Other" golfer)
 }
 ```
 
-**Backend validation:**
+**Backend validation (returns `422` on failure):**
 - Entry deadline has not passed
 - Max entries per email not exceeded
 - Pick count matches `rules_json.pick_count`
 - No duplicate golfers
 - All golfers are in the tournament field
-- For Crestmont: one pick per bucket, each from the correct bucket
+- For Crestmont: exactly one pick per bucket, each from the correct bucket
 
-Returns `422` with specific error messages on validation failure.
-
-**Response:**
+**Response:** `EntrySubmissionResponse`
 ```typescript
-{
+interface EntrySubmissionResponse {
   entry_id: number;
+  confirmationCode: string;
   email: string;
   entry_name: string;
   picks: EntryPick[];
-  // Additional fields TBD by backend
+  submittedAt: string;       // ISO 8601
 }
 ```
 
@@ -148,7 +154,7 @@ GET /api/golf/pools/{poolId}/leaderboard
 
 **Response:**
 ```typescript
-{
+interface LeaderboardData {
   pool_id: number;
   last_scored_at: string;         // ISO 8601 — when scoring last ran
   standings: LeaderboardStanding[];
@@ -161,39 +167,36 @@ interface LeaderboardStanding {
   entry_id: number;
   entry_name: string;
   email: string;
-  aggregate_score: number | null; // Sum of counted golfer scores; null if not qualified
-  qualification_status: "qualified" | "pending" | "not_qualified";
+  aggregate_score: number | null; // null if not qualified
+  qualification_status: QualificationStatus;  // "qualified" | "pending" | "not_qualified"
   qualified_golfers_count: number;
   counted_golfers_count: number;
-  is_complete: boolean;           // All rounds finished
+  is_complete: boolean;
   picks: LeaderboardPick[];
 }
 
 interface LeaderboardPick {
   dg_id: number;
   player_name: string;
-  total_score: number | null;     // Cumulative tournament score
-  position: number | null;        // Current tournament position
+  total_score: number | null;
+  position: number | null;
   thru: number | null;            // Holes completed in current round (18 = finished)
-  r1: number | null;              // Round 1 score
+  r1: number | null;
   r2: number | null;
   r3: number | null;
   r4: number | null;
-  status: "active" | "cut" | "wd" | "dq";
+  status: GolferStatus;           // "active" | "cut" | "wd" | "dq"
   made_cut: boolean;
-  counts_toward_total: boolean;   // True if this golfer's score contributes to aggregate
-  is_dropped: boolean;            // True if actively dropped (made cut but not in best N)
+  counts_toward_total: boolean;   // True if this pick contributes to the entry's aggregate
+  is_dropped: boolean;            // True if active but not in best N (made cut, excess picks)
   bucket_number?: number;         // Present for Crestmont entries
 }
 ```
 
-**Qualification status semantics:**
-- `qualified`: Enough active golfers meet the minimum (5 for RVCC, 4 for Crestmont)
-- `pending`: Cut has not been settled yet (round 2 not complete)
-- `not_qualified`: After the cut, too few active golfers
-
-**Counted vs dropped:**
-Among active (made cut) golfers, the best N by `total_score` are `counts_toward_total: true`. The rest are `is_dropped: true`. Cut/WD/DQ golfers have both as `false`.
+**Qualification semantics:**
+- `qualified`: enough active golfers meet `min_cuts_to_qualify`
+- `pending`: cut not yet settled (round 2 not complete)
+- `not_qualified`: after cut, too few active golfers
 
 ---
 
@@ -205,7 +208,7 @@ GET /api/golf/pools/{poolId}/entries/by-email?email={email}
 
 **Response:**
 ```typescript
-{
+interface EntryLookupResult {
   email: string;
   entries: EntryLookupEntry[];
 }
@@ -214,27 +217,338 @@ interface EntryLookupEntry {
   entry_id: number;
   entry_name: string;
   picks: EntryPick[];
-  submittedAt: string;            // ISO 8601
+  submittedAt: string;
   confirmationCode: string;
 }
 ```
 
 ---
 
-## Data Flow
+### Get Lock Status
 
 ```
-DataGolf API → golf_leaderboard (every 5 min)
-                    ↓
-           golf_score_pools task (every 5 min)
-                    ↓
-    golf_pool_entry_score_players (per-golfer materialized)
-    golf_pool_entry_scores (per-entry materialized + rank)
-                    ↓
-           GET /api/golf/pools/{id}/leaderboard
+GET /api/golf/pools/{poolId}/lock-status
 ```
 
-The backend materializes scored results every 5 minutes during active tournaments. Leaderboard reads are fast because results are pre-computed. The frontend does not compute scoring — it displays what the backend provides.
+**Response:**
+```typescript
+interface PoolLockStatus {
+  locked: boolean;
+  locked_at: string | null;   // ISO 8601; null if not yet locked
+  lock_time: string | null;   // Scheduled lock time; null if not yet determined
+}
+```
+
+---
+
+### Get Pool Events
+
+```
+GET /api/golf/pools/{poolId}/events?page={page}&pageSize={pageSize}
+```
+
+**Response:**
+```typescript
+interface PoolEventsPage {
+  pool_id: number;
+  events: PoolEvent[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+interface PoolEvent {
+  id: number;
+  pool_id: number;
+  event_type: PoolEventType;
+  actor_id: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+type PoolEventType =
+  | 'entry_submitted'
+  | 'entry_updated'
+  | 'pool_published'
+  | 'pool_locked'
+  | 'score_recalculated'
+  | 'email_delivery_failed';
+```
+
+---
+
+### Create Pool
+
+```
+POST /api/golf/pools
+```
+
+Requires coordinator authentication (Clerk JWT).
+
+**Request:**
+```typescript
+interface CreatePoolRequest {
+  club_code: ClubCode;
+  name: string;
+  tournament_id: number;
+  entry_deadline: string;          // ISO 8601
+  max_entries_per_email: number;
+  rules_json: CreatePoolRules;
+}
+
+interface CreatePoolRules extends PoolRules {
+  engine_type?: string;            // Defaults to 'golf'
+  buckets?: BucketDefinition[];    // Required for bucketed pools
+}
+
+interface BucketDefinition {
+  label: string;
+  min_picks: number;
+  max_picks: number;
+}
+```
+
+**Response:** `PoolSummary` (the newly created pool with status `'draft'`)
+
+---
+
+### Get Pool by Token
+
+```
+GET /api/golf/pools/by-token/{token}?club_code={clubCode}
+```
+
+Resolves a `pool_token` (from a public entry link) to a `PoolSummary`. Returns `null` when no matching pool exists.
+
+**Response:** `PoolSummary | null`
+
+---
+
+### Get Pool Entries
+
+```
+GET /api/golf/pools/{poolId}/entries
+```
+
+Requires coordinator authentication.
+
+**Response:**
+```typescript
+interface PoolEntriesResponse {
+  pool_id: number;
+  entries: PoolEntry[];
+  count: number;
+}
+
+interface PoolEntry {
+  entry_id: number;
+  entry_name: string;
+  email: string | null;
+  submitted_at: string;
+  picks: PoolEntryPick[];
+}
+```
+
+---
+
+### Download Pool Entries CSV
+
+```
+GET /api/golf/pools/{poolId}/entries/csv
+```
+
+Requires coordinator authentication.
+
+**Response:** `Blob` (CSV file)
+
+---
+
+## Club Endpoints
+
+### Get Club Pools
+
+```
+GET /api/clubs/{clubCode}/pools
+```
+
+Requires coordinator authentication. Returns all pools for the club across all statuses.
+
+**Response:** `PoolSummary[]`
+
+---
+
+### Get Club Branding
+
+```
+GET /api/clubs/{clubCode}/branding
+```
+
+**Response:**
+```typescript
+interface ClubBranding {
+  logo_url: string | null;
+  primary_color: string | null;
+  accent_color: string | null;
+}
+```
+
+---
+
+### Update Club Branding
+
+```
+PATCH /api/clubs/{clubCode}/branding
+```
+
+Requires coordinator authentication.
+
+**Request:** `Partial<ClubBranding>`
+
+**Response:** `ClubBranding` (updated)
+
+---
+
+### Get Club Billing
+
+```
+GET /api/clubs/{clubCode}/billing
+```
+
+Requires coordinator authentication.
+
+**Response:**
+```typescript
+interface ClubBilling {
+  billing_status: BillingStatus;           // "trial" | "active" | "suspended"
+  stripe_customer_id: string | null;
+  trial_used: boolean;
+  next_invoice_date: string | null;        // ISO 8601; present when active
+  billing_portal_url: string | null;       // Stripe portal URL; present when stripe_customer_id exists
+}
+```
+
+---
+
+### Create Billing Portal Session
+
+```
+POST /api/clubs/{clubCode}/billing/portal
+```
+
+Requires coordinator authentication. Creates a Stripe customer portal session.
+
+**Response:** `{ url: string }`
+
+---
+
+### Get Referral Info
+
+```
+GET /api/clubs/{clubCode}/referral
+```
+
+Requires coordinator authentication.
+
+**Response:**
+```typescript
+interface ReferralInfo {
+  referral_code: string;
+  referral_url: string;
+  credit_balance: number;
+  referred_clubs_count: number;
+}
+```
+
+---
+
+### Apply Referral Credit
+
+```
+POST /api/clubs/referral/apply
+```
+
+**Request:** `{ referral_code: string; referred_club_code: ClubCode }`
+
+**Response:**
+```typescript
+interface ReferralCreditResponse {
+  credit_balance: number;
+  credit_awarded: boolean;
+}
+```
+
+---
+
+## Tournament Endpoints
+
+### Get Tournaments
+
+```
+GET /api/golf/tournaments
+```
+
+Returns available tournaments for the pool creation wizard.
+
+**Response:** `TournamentOption[]`
+
+```typescript
+interface TournamentOption {
+  id: number;
+  name: string;
+  year: number;
+  cut_rule_type: CutRuleType;        // "masters" | "pga_championship" | "us_open" | "the_open"
+  default_format: 'flat' | 'bucketed';
+}
+```
+
+---
+
+## Admin Endpoints
+
+### Get Admin Stats
+
+```
+GET /api/admin/stats
+```
+
+Platform-wide stats. Requires developer/admin role.
+
+**Response:**
+```typescript
+interface AdminStats {
+  total_pools: number;
+  total_entries: number;
+  active_clubs: number;
+  mrr_cents: number;               // Monthly recurring revenue from Stripe, in cents
+}
+```
+
+---
+
+### Get Poll Health
+
+```
+GET /api/admin/poll-health
+```
+
+Data polling health for active tournaments. Requires developer/admin role.
+
+**Response:**
+```typescript
+interface AdminPollHealth {
+  tournaments: TournamentPollHealth[];
+  checked_at: string;
+}
+
+interface TournamentPollHealth {
+  pool_id: number;
+  pool_name: string;
+  tournament_name: string;
+  last_polled_at: string | null;   // null if never polled
+  is_in_window: boolean;           // True if within active tournament window
+  is_stale: boolean;               // True when in_window AND gap > 30 min since last poll
+}
+```
 
 ---
 
@@ -242,9 +556,25 @@ The backend materializes scored results every 5 minutes during active tournament
 
 These assumptions are embedded in the frontend code. If the backend deviates, these areas need updating:
 
-1. **Pool discovery**: The frontend finds a pool by calling the list endpoint with `club_code` + `active_only=true` and using the first result. It assumes at most one active pool per club.
-2. **Field endpoint shape**: RVCC returns `players[]`, Crestmont returns `buckets[]`. The frontend checks which field is present.
+1. **Pool discovery**: The frontend finds a pool by calling the list endpoint with `club_code + active_only=true` and using the first result. At most one active pool per club is expected.
+2. **Field shape**: RVCC returns `players[]`, Crestmont returns `buckets[]`. The frontend checks which field is present.
 3. **Bucket numbering**: 1-indexed, matching `bucket_number` on both field and leaderboard responses.
 4. **Golfer identity**: `dg_id` (DataGolf numeric ID) is the stable identifier across all endpoints.
-5. **No pagination**: The frontend does not paginate any endpoint response.
-6. **No real-time push**: The frontend does not use WebSockets or SSE for live updates. Users must refresh the leaderboard page manually.
+5. **No pagination**: The frontend does not paginate any endpoint response except pool events.
+6. **No real-time push**: The leaderboard polls every 5 minutes via `useApi`. No WebSockets or SSE.
+
+---
+
+## Data Flow
+
+```
+DataGolf API → golf_leaderboard (every 5 min during rounds)
+                    ↓
+           golf_score_pools task
+                    ↓
+    golf_pool_entry_scores (per-entry materialized + rank)
+                    ↓
+           GET /api/golf/pools/{id}/leaderboard
+```
+
+Leaderboard reads are fast because results are pre-computed by the backend. The frontend never computes scores.

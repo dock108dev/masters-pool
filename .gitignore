@@ -24,3 +24,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AIDLC working directory
+.aidlc/runs/
+.aidlc/reports/

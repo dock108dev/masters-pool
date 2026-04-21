@@ -4,7 +4,22 @@ import type {
   LeaderboardData,
   LeaderboardStanding,
   LeaderboardPick,
+  TournamentOption,
+  PoolEntriesResponse,
+  ClubBranding,
+  ClubBilling,
+  ReferralInfo,
+  AdminStats,
+  AdminPollHealth,
 } from '../../types/domain';
+
+export const MOCK_TOURNAMENTS: TournamentOption[] = [
+  { id: 101, name: 'The Masters 2026', year: 2026, cut_rule_type: 'masters', default_format: 'flat' },
+  { id: 102, name: 'PGA Championship 2026', year: 2026, cut_rule_type: 'pga_championship', default_format: 'flat' },
+  { id: 103, name: 'US Open 2026', year: 2026, cut_rule_type: 'us_open', default_format: 'flat' },
+  { id: 104, name: 'The Open 2026', year: 2026, cut_rule_type: 'the_open', default_format: 'flat' },
+  { id: 100, name: 'The Masters 2025', year: 2025, cut_rule_type: 'masters', default_format: 'flat' },
+];
 
 export const MOCK_RVCC_POOL: PoolSummary = {
   id: 1,
@@ -23,6 +38,7 @@ export const MOCK_RVCC_POOL: PoolSummary = {
     min_cuts_to_qualify: 5,
     uses_buckets: false,
   },
+  pool_token: 'rvcc-public-entry-token-2026',
 };
 
 export const MOCK_CRESTMONT_POOL: PoolSummary = {
@@ -42,6 +58,7 @@ export const MOCK_CRESTMONT_POOL: PoolSummary = {
     min_cuts_to_qualify: 4,
     uses_buckets: true,
   },
+  pool_token: 'crestmont-public-entry-token26',
 };
 
 // Flat player list (dg_id mirrors realistic DataGolf IDs)
@@ -223,6 +240,79 @@ const mockCrestmontStandings: LeaderboardStanding[] = [
   },
 ];
 
+export const MOCK_RVCC_ENTRIES: PoolEntriesResponse = {
+  pool_id: 1,
+  count: 3,
+  entries: [
+    {
+      entry_id: 1,
+      entry_name: 'John Smith',
+      email: 'john@example.com',
+      submitted_at: '2026-04-08T10:00:00Z',
+      picks: [
+        { dg_id: 18417, player_name: 'Scottie Scheffler', pick_slot: 1 },
+        { dg_id: 28237, player_name: 'Rory McIlroy', pick_slot: 2 },
+        { dg_id: 31560, player_name: 'Collin Morikawa', pick_slot: 3 },
+        { dg_id: 30925, player_name: 'Wyndham Clark', pick_slot: 4 },
+        { dg_id: 14937, player_name: 'Brooks Koepka', pick_slot: 5 },
+        { dg_id: 26302, player_name: 'Tommy Fleetwood', pick_slot: 6 },
+        { dg_id: 13958, player_name: 'Hideki Matsuyama', pick_slot: 7 },
+      ],
+    },
+    {
+      entry_id: 2,
+      entry_name: 'Jane Doe',
+      email: 'jane@example.com',
+      submitted_at: '2026-04-08T11:30:00Z',
+      picks: [
+        { dg_id: 27349, player_name: 'Xander Schauffele', pick_slot: 1 },
+        { dg_id: 21209, player_name: 'Jon Rahm', pick_slot: 2 },
+        { dg_id: 52955, player_name: 'Ludvig Aberg', pick_slot: 3 },
+        { dg_id: 38818, player_name: 'Viktor Hovland', pick_slot: 4 },
+        { dg_id: 30911, player_name: 'Patrick Cantlay', pick_slot: 5 },
+        { dg_id: 25580, player_name: 'Shane Lowry', pick_slot: 6 },
+        { dg_id: 35533, player_name: 'Sahith Theegala', pick_slot: 7 },
+      ],
+    },
+    {
+      entry_id: 3,
+      entry_name: 'Bob Wilson',
+      email: null,
+      submitted_at: '2026-04-08T14:00:00Z',
+      picks: [
+        { dg_id: 14256, player_name: 'Tony Finau', pick_slot: 1 },
+        { dg_id: 33948, player_name: 'Matt Fitzpatrick', pick_slot: 2 },
+        { dg_id: 25396, player_name: 'Russell Henley', pick_slot: 3 },
+        { dg_id: 11217, player_name: 'Keegan Bradley', pick_slot: 4 },
+        { dg_id: 11469, player_name: 'Brian Harman', pick_slot: 5 },
+        { dg_id: 35450, player_name: 'Sungjae Im', pick_slot: 6 },
+        { dg_id: 48081, player_name: 'Min Woo Lee', pick_slot: 7 },
+      ],
+    },
+  ],
+};
+
+export const MOCK_CRESTMONT_ENTRIES: PoolEntriesResponse = {
+  pool_id: 2,
+  count: 1,
+  entries: [
+    {
+      entry_id: 101,
+      entry_name: 'Alice Johnson',
+      email: 'alice@example.com',
+      submitted_at: '2026-04-08T09:00:00Z',
+      picks: [
+        { dg_id: 18417, player_name: 'Scottie Scheffler', pick_slot: 1, bucket_number: 1 },
+        { dg_id: 52955, player_name: 'Ludvig Aberg', pick_slot: 2, bucket_number: 2 },
+        { dg_id: 30911, player_name: 'Patrick Cantlay', pick_slot: 3, bucket_number: 3 },
+        { dg_id: 35533, player_name: 'Sahith Theegala', pick_slot: 4, bucket_number: 4 },
+        { dg_id: 11217, player_name: 'Keegan Bradley', pick_slot: 5, bucket_number: 5 },
+        { dg_id: 10577, player_name: 'Jason Day', pick_slot: 6, bucket_number: 6 },
+      ],
+    },
+  ],
+};
+
 export const MOCK_RVCC_LEADERBOARD: LeaderboardData = {
   pool_id: 1,
   last_scored_at: '2026-04-10T14:30:00Z',
@@ -235,4 +325,130 @@ export const MOCK_CRESTMONT_LEADERBOARD: LeaderboardData = {
   last_scored_at: '2026-04-10T14:30:00Z',
   standings: mockCrestmontStandings,
   count: mockCrestmontStandings.length,
+};
+
+// WD golfer who withdrew after R2 — total_score reflects completed rounds + penalty (backend-computed)
+export const MOCK_WD_PICK_WITH_SCORE: LeaderboardPick = {
+  dg_id: 27349,
+  player_name: 'Xander Schauffele',
+  total_score: 3,
+  position: null,
+  thru: null,
+  r1: -1,
+  r2: -2,
+  r3: null,
+  r4: null,
+  status: 'wd',
+  made_cut: false,
+  counts_toward_total: false,
+  is_dropped: false,
+};
+
+export const MOCK_DQ_PICK: LeaderboardPick = {
+  dg_id: 28237,
+  player_name: 'Rory McIlroy',
+  total_score: null,
+  position: null,
+  thru: null,
+  r1: null,
+  r2: null,
+  r3: null,
+  r4: null,
+  status: 'dq',
+  made_cut: false,
+  counts_toward_total: false,
+  is_dropped: false,
+};
+
+export const MOCK_EMPTY_LEADERBOARD: LeaderboardData = {
+  pool_id: 1,
+  last_scored_at: '2026-04-09T12:00:00Z',
+  standings: [],
+  count: 0,
+};
+
+export const MOCK_RVCC_BRANDING: ClubBranding = {
+  logo_url: null,
+  primary_color: null,
+  accent_color: null,
+};
+
+export const MOCK_CRESTMONT_BRANDING: ClubBranding = {
+  logo_url: null,
+  primary_color: null,
+  accent_color: null,
+};
+
+// Pool where scoring hasn't started (pre-tournament state)
+export const MOCK_PRE_TOURNAMENT_RVCC_POOL: PoolSummary = {
+  ...MOCK_RVCC_POOL,
+  scoring_enabled: false,
+  status: 'open',
+};
+
+export const MOCK_RVCC_BILLING: ClubBilling = {
+  billing_status: 'trial',
+  stripe_customer_id: null,
+  trial_used: false,
+  next_invoice_date: null,
+  billing_portal_url: null,
+};
+
+export const MOCK_CRESTMONT_BILLING: ClubBilling = {
+  billing_status: 'active',
+  stripe_customer_id: 'cus_mock_crestmont',
+  trial_used: true,
+  next_invoice_date: '2026-05-01',
+  billing_portal_url: 'https://billing.stripe.com/session/mock',
+};
+
+export const MOCK_SUSPENDED_BILLING: ClubBilling = {
+  billing_status: 'suspended',
+  stripe_customer_id: 'cus_mock_suspended',
+  trial_used: true,
+  next_invoice_date: null,
+  billing_portal_url: 'https://billing.stripe.com/session/mock-suspended',
+};
+
+export const MOCK_RVCC_REFERRAL: ReferralInfo = {
+  referral_code: 'rvcc-ref-abc123',
+  referral_url: 'https://app.example.com/ref/rvcc-ref-abc123',
+  credit_balance: 0,
+  referred_clubs_count: 0,
+};
+
+export const MOCK_CRESTMONT_REFERRAL: ReferralInfo = {
+  referral_code: 'crestmont-ref-xyz789',
+  referral_url: 'https://app.example.com/ref/crestmont-ref-xyz789',
+  credit_balance: 1,
+  referred_clubs_count: 1,
+};
+
+export const MOCK_ADMIN_STATS: AdminStats = {
+  total_pools: 2,
+  total_entries: 45,
+  active_clubs: 2,
+  mrr_cents: 19900,
+};
+
+export const MOCK_ADMIN_POLL_HEALTH: AdminPollHealth = {
+  tournaments: [
+    {
+      pool_id: 1,
+      pool_name: 'The Masters 2026 - RVCC Pool',
+      tournament_name: 'The Masters 2026',
+      last_polled_at: '2026-04-13T14:25:00Z',
+      is_in_window: true,
+      is_stale: false,
+    },
+    {
+      pool_id: 2,
+      pool_name: 'The Masters 2026 - Crestmont Pool',
+      tournament_name: 'The Masters 2026',
+      last_polled_at: '2026-04-13T14:25:00Z',
+      is_in_window: true,
+      is_stale: false,
+    },
+  ],
+  checked_at: '2026-04-13T14:27:00Z',
 };

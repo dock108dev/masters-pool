@@ -1,0 +1,79 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`GolferCell edge cases > matches snapshot for DQ status showing DQ pill 1`] = `
+<div>
+  <table>
+    <tbody>
+      <tr>
+        <td
+          class="golfer-cell golfer-not-counted golfer-inactive golfer-dq"
+          data-testid="golfer-cell-28237"
+        >
+          <div
+            class="golfer-cell-inner"
+          >
+            <div
+              class="golfer-info"
+            >
+              <span
+                class="golfer-name"
+              >
+                Rory McIlroy
+              </span>
+              <span
+                class="status-pill status-pill--dq"
+              >
+                DQ
+              </span>
+            </div>
+            <span
+              class="golfer-total"
+            >
+              -
+            </span>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+`;
+
+exports[`GolferCell edge cases > matches snapshot for WD status showing WD pill 1`] = `
+<div>
+  <table>
+    <tbody>
+      <tr>
+        <td
+          class="golfer-cell golfer-not-counted golfer-inactive"
+          data-testid="golfer-cell-27349"
+        >
+          <div
+            class="golfer-cell-inner"
+          >
+            <div
+              class="golfer-info"
+            >
+              <span
+                class="golfer-name"
+              >
+                Xander Schauffele
+              </span>
+              <span
+                class="status-pill status-pill--wd"
+              >
+                WD
+              </span>
+            </div>
+            <span
+              class="golfer-total"
+            >
+              +3
+            </span>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+`;

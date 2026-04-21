@@ -6,19 +6,22 @@ interface GolferCellProps {
 }
 
 export function GolferCell({ pick }: GolferCellProps) {
-  const isMissedCut = pick.status === 'cut' || pick.status === 'wd' || pick.status === 'dq';
+  const { status } = pick;
+  const isMissedCut = status === 'cut' || status === 'wd' || status === 'dq';
   const className = [
     'golfer-cell',
     pick.counts_toward_total ? 'golfer-counted' : 'golfer-not-counted',
     pick.is_dropped ? 'golfer-dropped' : '',
     isMissedCut ? 'golfer-inactive' : '',
+    status === 'cut' ? 'golfer-cut' : '',
+    status === 'dq' ? 'golfer-dq' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
-  const thruDisplay = isMissedCut
-    ? pick.status.toUpperCase()
-    : `Thru ${formatThru(pick.thru)}`;
+  const nameClassName = status === 'cut'
+    ? 'golfer-name golfer-name--strikethrough'
+    : 'golfer-name';
 
   const totalDisplay = formatScore(pick.total_score);
 
@@ -26,8 +29,19 @@ export function GolferCell({ pick }: GolferCellProps) {
     <td className={className} data-testid={`golfer-cell-${pick.dg_id}`}>
       <div className="golfer-cell-inner">
         <div className="golfer-info">
-          <span className="golfer-name">{pick.player_name}</span>
-          <span className="golfer-thru">{thruDisplay}</span>
+          <span className={nameClassName}>{pick.player_name}</span>
+          {status === 'active' && (
+            <span className="golfer-thru">Thru {formatThru(pick.thru)}</span>
+          )}
+          {status === 'cut' && (
+            <span className="golfer-thru">CUT</span>
+          )}
+          {status === 'wd' && (
+            <span className="status-pill status-pill--wd">WD</span>
+          )}
+          {status === 'dq' && (
+            <span className="status-pill status-pill--dq">DQ</span>
+          )}
         </div>
         <span className="golfer-total">{totalDisplay}</span>
       </div>

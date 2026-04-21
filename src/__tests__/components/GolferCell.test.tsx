@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { GolferCell } from '../../components/leaderboard/GolferCell';
 import type { LeaderboardPick } from '../../types/domain';
+import { MOCK_WD_PICK_WITH_SCORE, MOCK_DQ_PICK } from '../../api/mock/data';
 
 function makePick(overrides: Partial<LeaderboardPick> = {}): LeaderboardPick {
   return {
@@ -86,5 +87,65 @@ describe('GolferCell', () => {
     renderCell(makePick({ is_dropped: true, counts_toward_total: false }));
     const cell = screen.getByTestId('golfer-cell-18417');
     expect(cell).toHaveClass('golfer-dropped');
+  });
+});
+
+describe('GolferCell edge cases', () => {
+  it('renders WD pill for wd status', () => {
+    renderCell(MOCK_WD_PICK_WITH_SCORE);
+    const pill = screen.getByText('WD');
+    expect(pill).toBeInTheDocument();
+    expect(pill).toHaveClass('status-pill--wd');
+  });
+
+  it('matches snapshot for WD status showing WD pill', () => {
+    const { container } = renderCell(MOCK_WD_PICK_WITH_SCORE);
+    expect(container).toMatchSnapshot();
+  });
+
+  it('renders WD golfer total score (completed rounds + backend-applied penalty)', () => {
+    renderCell(MOCK_WD_PICK_WITH_SCORE);
+    // MOCK_WD_PICK_WITH_SCORE has total_score: 3 → formatScore(3) = '+3'
+    expect(screen.getByText('+3')).toBeInTheDocument();
+  });
+
+  it('renders DQ pill for dq status', () => {
+    renderCell(MOCK_DQ_PICK);
+    const pill = screen.getByText('DQ');
+    expect(pill).toBeInTheDocument();
+    expect(pill).toHaveClass('status-pill--dq');
+  });
+
+  it('matches snapshot for DQ status showing DQ pill', () => {
+    const { container } = renderCell(MOCK_DQ_PICK);
+    expect(container).toMatchSnapshot();
+  });
+
+  it('applies golfer-dq de-emphasis class for dq status', () => {
+    renderCell(MOCK_DQ_PICK);
+    const cell = screen.getByTestId(`golfer-cell-${MOCK_DQ_PICK.dg_id}`);
+    expect(cell).toHaveClass('golfer-dq');
+    expect(cell).toHaveClass('golfer-inactive');
+  });
+
+  it('applies strikethrough class on name for cut status', () => {
+    const cutPick = makePick({ status: 'cut', total_score: null, thru: null, counts_toward_total: false });
+    renderCell(cutPick);
+    const cell = screen.getByTestId('golfer-cell-18417');
+    expect(cell).toHaveClass('golfer-cut');
+    const name = within(cell).getByText('Scottie Scheffler');
+    expect(name).toHaveClass('golfer-name--strikethrough');
+  });
+
+  it('does not render thru text for wd — only the WD pill', () => {
+    renderCell(MOCK_WD_PICK_WITH_SCORE);
+    expect(screen.queryByText(/Thru/)).not.toBeInTheDocument();
+    expect(screen.queryByText('CUT')).not.toBeInTheDocument();
+  });
+
+  it('does not render thru text for dq — only the DQ pill', () => {
+    renderCell(MOCK_DQ_PICK);
+    expect(screen.queryByText(/Thru/)).not.toBeInTheDocument();
+    expect(screen.queryByText('CUT')).not.toBeInTheDocument();
   });
 });

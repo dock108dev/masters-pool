@@ -1,42 +1,48 @@
 import type { AvailableGolfer, ClubConfig } from '../../types/domain';
-import { canAddGolfer } from '../../utils/validation';
+import { SlotDropdown } from './SlotDropdown';
 
-interface GolferPickerProps {
+export interface GolferPickerProps {
   golfers: AvailableGolfer[];
-  selectedIds: number[];
+  /** One entry per pick slot; null = unfilled. Length must equal clubConfig.pickCount. */
+  slotSelections: (number | null)[];
   clubConfig: ClubConfig;
   buckets: null;
-  onSelect: (dgId: number) => void;
-  onDeselect: (dgId: number) => void;
+  onSlotChange: (slotIndex: number, dgId: number | null) => void;
+  slotErrors: (string | null)[];
 }
 
-export function GolferPicker({ golfers, selectedIds, clubConfig, buckets, onSelect, onDeselect }: GolferPickerProps) {
+export function GolferPicker({
+  golfers,
+  slotSelections,
+  clubConfig,
+  onSlotChange,
+  slotErrors,
+}: GolferPickerProps) {
+  const filledCount = slotSelections.filter((id) => id !== null).length;
+
   return (
     <div className="golfer-picker" data-testid="golfer-picker">
       <p className="picker-instruction">
-        Select exactly {clubConfig.pickCount} golfers ({selectedIds.length}/{clubConfig.pickCount} selected)
+        Select exactly {clubConfig.pickCount} golfers ({filledCount}/{clubConfig.pickCount} selected)
       </p>
-      <div className="golfer-list">
-        {golfers.map((golfer) => {
-          const isSelected = selectedIds.includes(golfer.dg_id);
-          const { allowed, reason } = isSelected
-            ? { allowed: true, reason: undefined }
-            : canAddGolfer(golfer.dg_id, selectedIds, golfers, clubConfig, buckets);
-
+      <div className="golfer-picker__slots">
+        {slotSelections.map((dgId, slotIndex) => {
+          const selectedGolfer = dgId !== null ? (golfers.find((g) => g.dg_id === dgId) ?? null) : null;
+          // Each slot's available list excludes golfers already picked in OTHER slots
+          const available = golfers.filter(
+            (g) => !slotSelections.some((id, j) => j !== slotIndex && id === g.dg_id)
+          );
           return (
-            <button
-              key={golfer.dg_id}
-              type="button"
-              className={`golfer-option ${isSelected ? 'selected' : ''} ${!isSelected && !allowed ? 'disabled' : ''}`}
-              onClick={() => (isSelected ? onDeselect(golfer.dg_id) : onSelect(golfer.dg_id))}
-              disabled={!isSelected && !allowed}
-              title={!isSelected && !allowed ? reason : undefined}
-              data-testid={`golfer-option-${golfer.dg_id}`}
-            >
-              <span className="golfer-option-name">{golfer.player_name}</span>
-              {golfer.ranking != null && <span className="golfer-option-rank">#{golfer.ranking}</span>}
-              {golfer.country && <span className="golfer-option-country">{golfer.country}</span>}
-            </button>
+            <SlotDropdown
+              key={slotIndex}
+              slotLabel={`Pick ${slotIndex + 1}`}
+              slotIndex={slotIndex}
+              selectedGolfer={selectedGolfer}
+              availableGolfers={available}
+              onSelect={(id) => onSlotChange(slotIndex, id)}
+              onClear={() => onSlotChange(slotIndex, null)}
+              error={slotErrors[slotIndex]}
+            />
           );
         })}
       </div>
