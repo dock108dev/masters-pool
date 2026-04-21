@@ -26,5 +26,4 @@ dist-ssr
 *.sw?
 
 # AIDLC working directory
-.aidlc/runs/
-.aidlc/reports/
+.aidlc/*
