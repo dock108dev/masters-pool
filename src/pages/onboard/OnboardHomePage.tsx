@@ -15,21 +15,28 @@ interface PricingTier {
 
 const PRICING_TIERS: PricingTier[] = [
   {
-    name: 'Trial',
-    price: 'Free',
-    description: 'One pool, no credit card required.',
-    features: ['One pool per club', 'Unlimited entries', 'Live leaderboard', 'Email notifications'],
+    name: 'Single Pool',
+    price: '$199 / pool',
+    description: 'Run one major pool end-to-end.',
+    features: [
+      'One pool, any major',
+      'Unlimited entries',
+      'Live leaderboard',
+      'Email notifications',
+      'CSV export',
+    ],
     cta: 'Claim Your Club',
     ctaPath: '#claim',
     highlight: false,
   },
   {
-    name: 'Season',
-    price: '$49 / pool',
-    description: 'Run as many pools as your club needs.',
+    name: 'Year of Weekly Pools',
+    price: '$499 / year',
+    description: 'A season of weekly pools — PGA Tour every week, all four majors, your choice.',
     features: [
-      'Unlimited pools',
-      'All formats supported',
+      'Unlimited pools for 12 months',
+      'Weekly PGA Tour support',
+      'All formats (flat + bucketed)',
       'Custom branding',
       'CSV export',
       'Priority support',
