@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { SignedOut } from '@clerk/clerk-react';
+import { Outlet } from 'react-router-dom';
 import { useClubConfig } from '../hooks/useClubConfig';
 import { useApi } from '../hooks/useApi';
 import { apiClient } from '../api/client';
@@ -17,7 +16,6 @@ function applyBrandingDefaults() {
 
 export function ClubRoot() {
   const { clubConfig, error } = useClubConfig();
-  const location = useLocation();
   const clubCode = clubConfig?.code;
 
   const { data: pool } = useApi(
@@ -55,19 +53,8 @@ export function ClubRoot() {
     );
   }
 
-  const isAdminPath = /\/admin(\/|$)/.test(location.pathname);
-
   return (
     <Layout clubConfig={clubConfig} poolId={pool?.id ?? null}>
-      {isAdminPath && (
-        <SignedOut>
-          <div className="coordinator-signin-bar" data-testid="coordinator-signin-bar">
-            <Link to="/admin/sign-in" className="coordinator-signin-link">
-              Coordinator sign-in
-            </Link>
-          </div>
-        </SignedOut>
-      )}
       <Outlet context={{ clubConfig }} />
     </Layout>
   );

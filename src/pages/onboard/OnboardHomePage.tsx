@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import type { ClubClaim } from '../../types/domain';
 
@@ -20,8 +19,8 @@ const PRICING_TIERS: PricingTier[] = [
     price: 'Free',
     description: 'One pool, no credit card required.',
     features: ['One pool per club', 'Unlimited entries', 'Live leaderboard', 'Email notifications'],
-    cta: 'Start Free',
-    ctaPath: '/sign-up',
+    cta: 'Claim Your Club',
+    ctaPath: '#claim',
     highlight: false,
   },
   {
@@ -35,8 +34,8 @@ const PRICING_TIERS: PricingTier[] = [
       'CSV export',
       'Priority support',
     ],
-    cta: 'Get Started',
-    ctaPath: '/sign-up',
+    cta: 'Claim Your Club',
+    ctaPath: '#claim',
     highlight: true,
   },
 ];
@@ -96,8 +95,7 @@ export function OnboardHomePage() {
       <header className="marketing-header">
         <div className="marketing-logo">Club Golf Tools</div>
         <nav className="marketing-nav">
-          <a href="#claim" className="btn btn-secondary">Claim Your Club</a>
-          <Link to="/sign-up" className="btn btn-primary marketing-cta-nav">Start Free</Link>
+          <a href="#claim" className="btn btn-primary marketing-cta-nav">Claim Your Club</a>
         </nav>
       </header>
 
@@ -107,9 +105,9 @@ export function OnboardHomePage() {
           Set up a Masters, PGA Championship, or any major pool in minutes. Share a link, collect
           entries, and follow the leaderboard live.
         </p>
-        <Link to="/sign-up" className="btn btn-primary marketing-start-free" data-testid="start-free-btn">
-          Start Free
-        </Link>
+        <a href="#claim" className="btn btn-primary marketing-start-free" data-testid="start-free-btn">
+          Claim Your Club
+        </a>
       </section>
 
       <section className="marketing-formats" data-testid="marketing-formats">
@@ -150,9 +148,9 @@ export function OnboardHomePage() {
                   <li key={f}>{f}</li>
                 ))}
               </ul>
-              <Link to={tier.ctaPath} className="btn btn-primary pricing-cta">
+              <a href={tier.ctaPath} className="btn btn-primary pricing-cta">
                 {tier.cta}
-              </Link>
+              </a>
             </div>
           ))}
         </div>

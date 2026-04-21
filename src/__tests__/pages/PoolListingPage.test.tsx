@@ -3,16 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { PoolListingPage } from '../../pages/PoolListingPage';
-import { CoordinatorRoute } from '../../pages/CoordinatorRoute';
 import { getClubConfig } from '../../config/clubs';
 import type { PoolSummary } from '../../types/domain';
-
-vi.mock('@clerk/clerk-react', () => ({
-  useAuth: vi.fn(),
-}));
-
-import { useAuth } from '@clerk/clerk-react';
-const mockUseAuth = vi.mocked(useAuth);
 
 let activeClient: MockApiClient = new MockApiClient(0);
 
@@ -29,17 +21,9 @@ function renderPoolListing(_clubCode = 'rvcc', config = rvccConfig) {
   return render(
     <MemoryRouter initialEntries={['/admin/pools']}>
       <Routes>
-        <Route path="/admin/sign-in" element={<div>Sign In Page</div>} />
         <Route path="/admin/pools/new" element={<div data-testid="wizard-page">Pool Wizard</div>} />
         <Route path="/admin/pools/:poolId" element={<div data-testid="dashboard-page">Dashboard</div>} />
-        <Route
-          path="/admin/pools"
-          element={
-            <CoordinatorRoute>
-              <PoolListingPage clubConfig={config} />
-            </CoordinatorRoute>
-          }
-        />
+        <Route path="/admin/pools" element={<PoolListingPage clubConfig={config} />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -48,14 +32,9 @@ function renderPoolListing(_clubCode = 'rvcc', config = rvccConfig) {
 describe('PoolListingPage', () => {
   beforeEach(() => {
     activeClient = new MockApiClient(0);
-    mockUseAuth.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      orgRole: 'org:admin',
-    } as ReturnType<typeof useAuth>);
   });
 
-  it('renders all club pools for an org:admin coordinator', async () => {
+  it('renders all club pools', async () => {
     renderPoolListing('rvcc', rvccConfig);
 
     await waitFor(() => {
@@ -64,19 +43,6 @@ describe('PoolListingPage', () => {
 
     expect(screen.getByTestId('pool-card-1')).toBeInTheDocument();
     expect(screen.getByText('The Masters 2026 - RVCC Pool')).toBeInTheDocument();
-  });
-
-  it('shows Access Denied for org:member role', () => {
-    mockUseAuth.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      orgRole: 'org:member',
-    } as ReturnType<typeof useAuth>);
-
-    renderPoolListing();
-
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Access Denied')).toBeInTheDocument();
   });
 
   it('shows pool name, format, entry count, lock time, and status badge', async () => {

@@ -1,13 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { ClubRoot } from '../../pages/ClubRoot';
-
-// Mock Clerk so ClubRoot tests run without a real Clerk environment
-vi.mock('@clerk/clerk-react', () => ({
-  SignedOut: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
 
 // Mock useClubConfig to return a known club
 vi.mock('../../hooks/useClubConfig', () => ({
@@ -57,28 +52,6 @@ describe('ClubRoot', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
-  it('does not show coordinator sign-in link on public routes', () => {
-    renderAt('/leaderboard');
-    expect(screen.queryByTestId('coordinator-signin-bar')).not.toBeInTheDocument();
-  });
-
-  it('shows coordinator sign-in link on admin paths', () => {
-    renderAt('/admin');
-    expect(screen.getByTestId('coordinator-signin-bar')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /coordinator sign-in/i })).toBeInTheDocument();
-  });
-
-  it('coordinator sign-in link points to admin/sign-in path', () => {
-    renderAt('/admin');
-    const link = screen.getByRole('link', { name: /coordinator sign-in/i });
-    expect(link).toHaveAttribute('href', '/admin/sign-in');
-  });
-
-  it('does not show coordinator sign-in link on root path', () => {
-    renderAt('/');
-    expect(screen.queryByTestId('coordinator-signin-bar')).not.toBeInTheDocument();
-  });
-
   describe('branding CSS custom properties', () => {
     afterEach(() => {
       document.documentElement.style.removeProperty('--club-primary');

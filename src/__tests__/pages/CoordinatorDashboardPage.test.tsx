@@ -3,17 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { CoordinatorDashboardPage } from '../../pages/CoordinatorDashboardPage';
-import { CoordinatorRoute } from '../../pages/CoordinatorRoute';
 import { getClubConfig } from '../../config/clubs';
 import { MOCK_SUSPENDED_BILLING } from '../../api/mock/data';
-
-// Mock @clerk/clerk-react so tests run without a real Clerk environment
-vi.mock('@clerk/clerk-react', () => ({
-  useAuth: vi.fn(),
-}));
-
-import { useAuth } from '@clerk/clerk-react';
-const mockUseAuth = vi.mocked(useAuth);
 
 let activeClient: MockApiClient = new MockApiClient(0);
 
@@ -41,11 +32,6 @@ function renderDashboard(poolId = 1) {
 describe('CoordinatorDashboardPage', () => {
   beforeEach(() => {
     activeClient = new MockApiClient(0);
-    mockUseAuth.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      orgRole: 'org:admin',
-    } as ReturnType<typeof useAuth>);
     // Ensure createObjectURL and revokeObjectURL are available in jsdom
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url');
     URL.revokeObjectURL = vi.fn();
@@ -160,11 +146,6 @@ describe('CoordinatorDashboardPage', () => {
 describe('CoordinatorDashboardPage — billing section', () => {
   beforeEach(() => {
     activeClient = new MockApiClient(0);
-    mockUseAuth.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      orgRole: 'org:admin',
-    } as ReturnType<typeof useAuth>);
   });
 
   it('shows billing section with Trial badge for RVCC (default mock)', async () => {
@@ -232,39 +213,3 @@ describe('CoordinatorDashboardPage — billing section', () => {
   });
 });
 
-describe('CoordinatorDashboardPage — access control', () => {
-  beforeEach(() => {
-    activeClient = new MockApiClient(0);
-  });
-
-  it('blocks org:member role — access denied message is shown via CoordinatorRoute', () => {
-    // Simulate what CoordinatorRoute renders for org:member
-    // The page itself doesn't enforce auth — CoordinatorRoute wraps it.
-    // This test verifies the CoordinatorRoute guard works by rendering the guard inline.
-    mockUseAuth.mockReturnValue({
-      isLoaded: true,
-      isSignedIn: true,
-      orgRole: 'org:member',
-    } as ReturnType<typeof useAuth>);
-
-    render(
-      <MemoryRouter initialEntries={['/admin/pools/1']}>
-        <Routes>
-          <Route path="/admin/sign-in" element={<div>Sign In</div>} />
-          <Route
-            path="/admin/pools/:poolId"
-            element={
-              <CoordinatorRoute>
-                <CoordinatorDashboardPage clubConfig={rvccConfig} />
-              </CoordinatorRoute>
-            }
-          />
-        </Routes>
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Access Denied')).toBeInTheDocument();
-    expect(screen.queryByTestId('coordinator-dashboard')).not.toBeInTheDocument();
-  });
-});
