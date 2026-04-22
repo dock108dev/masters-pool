@@ -30,16 +30,30 @@ function isValidInviteList(raw: string): boolean {
   return emails.length > 0 && emails.every((e) => EMAIL_RE.test(e));
 }
 
-const IANA_ZONES: string[] = (() => {
+function buildIanaZoneOptions(): string[] {
+  let base: string[];
   try {
-    return (Intl as { supportedValuesOf(k: string): string[] }).supportedValuesOf('timeZone');
+    base = (Intl as { supportedValuesOf(k: string): string[] }).supportedValuesOf('timeZone');
   } catch {
-    return [
-      'America/New_York', 'America/Chicago', 'America/Denver',
-      'America/Los_Angeles', 'America/Phoenix', 'Pacific/Honolulu',
+    // `supportedValuesOf` is missing in some runtimes; keep UTC so CI (often `UTC`) matches an option.
+    base = [
+      'UTC',
+      'America/New_York',
+      'America/Chicago',
+      'America/Denver',
+      'America/Los_Angeles',
+      'America/Phoenix',
+      'Pacific/Honolulu',
     ];
   }
-})();
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (typeof browserTz === 'string' && browserTz.length > 0 && !base.includes(browserTz)) {
+    return [browserTz, ...base];
+  }
+  return base;
+}
+
+const IANA_ZONES: string[] = buildIanaZoneOptions();
 
 function buildSummaryItems(state: OnboardingWizardState): { label: string; value: string }[] {
   const engine = getWizardEngine(state.engine_type);

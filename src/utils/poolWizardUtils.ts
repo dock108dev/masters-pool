@@ -21,11 +21,16 @@ export interface OnboardingWizardState extends WizardState {
   entry_fee_currency: string;
 }
 
+function defaultWizardTimeZone(): string {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return typeof tz === 'string' && tz.length > 0 ? tz : 'UTC';
+}
+
 export const DEFAULT_ONBOARDING_WIZARD_STATE: OnboardingWizardState = {
   step: 0,
   club_name: '',
   club_slug: '',
-  time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  time_zone: defaultWizardTimeZone(),
   tournament_id: null,
   pool_name: '',
   entry_deadline: '',
