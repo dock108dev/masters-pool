@@ -11,12 +11,60 @@ export interface SlugAvailabilityInputProps {
 
 type SlugStatus = 'idle' | 'invalid' | 'checking' | 'available' | 'taken' | 'error';
 
+type ApiProbe =
+  | { kind: 'none' }
+  | { kind: 'checking'; slug: string }
+  | { kind: 'available'; slug: string }
+  | { kind: 'taken'; slug: string }
+  | { kind: 'error'; slug: string };
+
 function validateFormat(slug: string): string | null {
   if (slug.length < 3) return 'Must be at least 3 characters';
   if (slug.length > 30) return 'Must be 30 characters or fewer';
   if (!/^[a-z0-9-]+$/.test(slug)) return 'Only lowercase letters, numbers, and hyphens';
   if (slug.startsWith('-') || slug.endsWith('-')) return 'Cannot start or end with a hyphen';
   return null;
+}
+
+function probeToDisplay(probe: ApiProbe): { status: SlugStatus; message: string } {
+  switch (probe.kind) {
+    case 'none':
+      return { status: 'idle', message: '' };
+    case 'checking':
+      return { status: 'checking', message: '' };
+    case 'available':
+      return { status: 'available', message: 'Available' };
+    case 'taken':
+      return { status: 'taken', message: 'Already taken' };
+    case 'error':
+      return { status: 'error', message: 'Could not check availability — try again' };
+    default:
+      return { status: 'idle', message: '' };
+  }
+}
+
+/** Combine server probe with current value: empty / invalid are purely derived from `value`. */
+function deriveSlugUi(value: string, probe: ApiProbe): { status: SlugStatus; message: string } {
+  if (!value) {
+    return { status: 'idle', message: '' };
+  }
+  const formatError = validateFormat(value);
+  if (formatError) {
+    return { status: 'invalid', message: formatError };
+  }
+
+  if (probe.kind === 'none') {
+    return { status: 'idle', message: '' };
+  }
+
+  // Same slug as the probe: show live API state for this input.
+  if (probe.slug === value) {
+    return probeToDisplay(probe);
+  }
+
+  // Valid slug but probe is for a different slug: keep showing prior probe while debouncing
+  // (matches previous behavior before the next check flips to `checking`).
+  return probeToDisplay(probe);
 }
 
 export function SlugAvailabilityInput({
@@ -30,14 +78,15 @@ export function SlugAvailabilityInput({
   const inputId = `slug-input-${uid}`;
   const statusId = `slug-status-${uid}`;
 
-  const [status, setStatus] = useState<SlugStatus>('idle');
-  const [statusMessage, setStatusMessage] = useState('');
+  const [probe, setProbe] = useState<ApiProbe>({ kind: 'none' });
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // Stable ref so the effect doesn't re-run when parent re-renders with inline callbacks
   const onValidSlugRef = useRef(onValidSlug);
-  onValidSlugRef.current = onValidSlug;
+  useEffect(() => {
+    onValidSlugRef.current = onValidSlug;
+  }, [onValidSlug]);
 
   useEffect(() => {
     if (timerRef.current !== null) {
@@ -47,42 +96,32 @@ export function SlugAvailabilityInput({
     abortRef.current?.abort();
     abortRef.current = null;
 
-    if (!value) {
-      setStatus('idle');
-      setStatusMessage('');
-      return;
-    }
-
-    const formatError = validateFormat(value);
-    if (formatError) {
-      setStatus('invalid');
-      setStatusMessage(formatError);
+    if (!value || validateFormat(value)) {
+      queueMicrotask(() => {
+        setProbe({ kind: 'none' });
+      });
       return;
     }
 
     timerRef.current = setTimeout(() => {
       const controller = new AbortController();
       abortRef.current = controller;
-      setStatus('checking');
-      setStatusMessage('');
+      setProbe({ kind: 'checking', slug: value });
 
       apiClient
         .checkSlugAvailability(value, controller.signal)
         .then((result) => {
           if (controller.signal.aborted) return;
           if (result.available) {
-            setStatus('available');
-            setStatusMessage('Available');
+            setProbe({ kind: 'available', slug: value });
             onValidSlugRef.current(value);
           } else {
-            setStatus('taken');
-            setStatusMessage('Already taken');
+            setProbe({ kind: 'taken', slug: value });
           }
         })
         .catch((err: unknown) => {
           if (err instanceof Error && err.name === 'AbortError') return;
-          setStatus('error');
-          setStatusMessage('Could not check availability — try again');
+          setProbe({ kind: 'error', slug: value });
         });
     }, 400);
 
@@ -95,6 +134,7 @@ export function SlugAvailabilityInput({
     };
   }, [value, apiClient]);
 
+  const { status, message: statusMessage } = deriveSlugUi(value, probe);
   const isInvalid = status === 'taken' || status === 'invalid' || status === 'error';
 
   return (

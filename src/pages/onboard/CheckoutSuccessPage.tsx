@@ -7,13 +7,18 @@ import { useAnalytics } from '../../hooks/useAnalytics';
 
 type PageState = 'loading' | 'error' | 'form' | 'submitting';
 
+const NO_SESSION_ID_MESSAGE =
+  'No session ID found. Please contact support if you completed a payment.';
+
 export function CheckoutSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get('session_id');
 
-  const [state, setState] = useState<PageState>('loading');
-  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [state, setState] = useState<PageState>(() => (sessionId ? 'loading' : 'error'));
+  const [verifyError, setVerifyError] = useState<string | null>(() =>
+    sessionId ? null : NO_SESSION_ID_MESSAGE,
+  );
   const { capture } = useAnalytics();
   const [clubName, setClubName] = useState('');
   const [slug, setSlug] = useState('');
@@ -22,11 +27,7 @@ export function CheckoutSuccessPage() {
   const hasSubmittedRef = useRef(false);
 
   useEffect(() => {
-    if (!sessionId) {
-      setVerifyError('No session ID found. Please contact support if you completed a payment.');
-      setState('error');
-      return;
-    }
+    if (!sessionId) return;
 
     apiClient
       .verifyCheckoutSession(sessionId)
@@ -46,7 +47,7 @@ export function CheckoutSuccessPage() {
         );
         setState('error');
       });
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, capture]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
