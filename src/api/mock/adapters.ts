@@ -1,4 +1,14 @@
 import type { ApiClient, SlugCheckResponse, VerifySessionResponse, CreateClubRequest, CreateClubResponse, OnboardingWizardSubmitRequest, OnboardingWizardSubmitResponse, SendInvitesRequest, PendingClub } from '../types';
+import type {
+  AuthUser,
+  AuthTokenResponse,
+  LoginRequest,
+  SignupRequest,
+  MagicLinkRequest,
+  VerifyMagicLinkRequest,
+  PasswordResetRequest,
+  PasswordResetConfirm,
+} from '../../auth/types';
 import type { ClubCode, EntrySubmissionRequest, PoolEvent, CreatePoolRequest, ClubBranding, ClubBilling, ClubClaim, ClubClaimResponse, PoolStatus, Player, PlayerScore, EntryLeaderboardResponse } from '../../types/domain';
 import {
   MOCK_RVCC_POOL,
@@ -31,6 +41,26 @@ const delay = (ms: number) =>
 /** Sentinel locked_at returned for pools configured as locked in tests. */
 export const MOCK_LOCKED_AT = '2026-04-09T11:00:00Z';
 
+/** Default mock auth user returned by MockApiClient when signed in. */
+export const MOCK_AUTH_USER: AuthUser = {
+  id: 42,
+  email: 'coordinator@example.com',
+  role: 'user',
+  memberships: [
+    { club_id: 'club_rvcc', role: 'owner' },
+    { club_id: 'club_crestmont', role: 'admin' },
+  ],
+};
+
+const MOCK_ACCESS_TOKEN = 'mock_access_token_abc';
+const MOCK_REFRESH_TOKEN = 'mock_refresh_token_xyz';
+const MOCK_TOKEN_RESPONSE: AuthTokenResponse = {
+  access_token: MOCK_ACCESS_TOKEN,
+  refresh_token: MOCK_REFRESH_TOKEN,
+  token_type: 'bearer',
+  role: 'user',
+};
+
 /** Default mock lock_time for unlocked pools. */
 const MOCK_LOCK_TIME = '2026-04-09T07:00:00Z';
 
@@ -48,6 +78,8 @@ export class MockApiClient implements ApiClient {
   private readonly checkoutSessionProvisioned: boolean;
   private readonly mockSessionClubName: string;
   private readonly hasPendingClub: boolean;
+  /** When true, getCurrentUser() returns MOCK_AUTH_USER; else null (signed out). */
+  private signedIn = false;
   /** Tracks submitted email+pool combos to simulate 409 duplicate responses. */
   private readonly submittedEntries = new Set<string>();
   /** Mutable pool status overrides set by lockPool/unlockPool calls. */
@@ -392,6 +424,63 @@ export class MockApiClient implements ApiClient {
     const standing = allStandings.find((s) => s.entry_id === entryId);
     if (!standing) return null;
     return { standing, last_scored_at: MOCK_RVCC_LEADERBOARD.last_scored_at };
+  }
+
+  // ===== Auth =====
+
+  async login(request: LoginRequest): Promise<AuthTokenResponse> {
+    await delay(this.latencyMs);
+    if (!request.email || !request.password) {
+      throw Object.assign(new Error('Invalid email or password.'), { status: 401 });
+    }
+    this.signedIn = true;
+    return { ...MOCK_TOKEN_RESPONSE };
+  }
+
+  async signup(request: SignupRequest): Promise<AuthTokenResponse> {
+    await delay(this.latencyMs);
+    if (!request.email || (request.password?.length ?? 0) < 8) {
+      throw Object.assign(new Error('Invalid signup payload.'), { status: 422 });
+    }
+    this.signedIn = true;
+    return { ...MOCK_TOKEN_RESPONSE };
+  }
+
+  async refreshAccessToken(_refreshToken: string): Promise<AuthTokenResponse> {
+    await delay(this.latencyMs);
+    return { ...MOCK_TOKEN_RESPONSE };
+  }
+
+  async getCurrentUser(): Promise<AuthUser | null> {
+    await delay(this.latencyMs);
+    return this.signedIn ? { ...MOCK_AUTH_USER } : null;
+  }
+
+  async requestMagicLink(_request: MagicLinkRequest): Promise<void> {
+    await delay(this.latencyMs);
+  }
+
+  async verifyMagicLink(request: VerifyMagicLinkRequest): Promise<AuthTokenResponse> {
+    await delay(this.latencyMs);
+    if (!request.token || request.token === 'expired') {
+      throw Object.assign(
+        new Error('This link has expired or already been used.'),
+        { status: 410 },
+      );
+    }
+    this.signedIn = true;
+    return { ...MOCK_TOKEN_RESPONSE };
+  }
+
+  async requestPasswordReset(_request: PasswordResetRequest): Promise<void> {
+    await delay(this.latencyMs);
+  }
+
+  async confirmPasswordReset(request: PasswordResetConfirm): Promise<void> {
+    await delay(this.latencyMs);
+    if (!request.token || request.token === 'expired') {
+      throw Object.assign(new Error('Reset link is invalid or expired.'), { status: 400 });
+    }
   }
 
   async lookupEntries(_poolId: number, email: string) {

@@ -18,17 +18,18 @@ export default defineConfig({
   server: {
     // Allow subdomain access: rvcc.localhost, crestmont.localhost
     host: true,
-    proxy: {
-      '/api': {
-        target: process.env.SPORTS_API_URL ?? 'https://sda.dock108.dev',
-        changeOrigin: true,
-        secure: true,
-        headers: {
-          // SPORTS_API_KEY must be set in .env.local — no hardcoded fallback
-          ...(process.env.SPORTS_API_KEY ? { 'X-API-Key': process.env.SPORTS_API_KEY } : {}),
-        },
-      },
-    },
+    proxy: (() => {
+      const target = process.env.SPORTS_API_URL ?? 'https://sda.dock108.dev';
+      // SPORTS_API_KEY must be set in .env.local — no hardcoded fallback
+      const headers = process.env.SPORTS_API_KEY
+        ? { 'X-API-Key': process.env.SPORTS_API_KEY }
+        : {};
+      const common = { target, changeOrigin: true, secure: true, headers };
+      return {
+        '/api': common,
+        '/auth': common,
+      };
+    })(),
   },
   test: {
     globals: true,

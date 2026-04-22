@@ -1,36 +1,35 @@
 import type { ReactNode } from 'react';
-import { useAuth, useClerk } from '@clerk/clerk-react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useSession } from '../../auth/useSession';
 
 interface ProtectedRouteProps {
   children: ReactNode;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated, isLoading } = useSession();
   const location = useLocation();
 
-  if (!isLoaded) {
+  if (isLoading) {
     return null;
   }
 
-  if (!isSignedIn) {
-    return (
-      <Navigate to="/admin/sign-in" state={{ returnTo: location.pathname }} replace />
-    );
+  if (!isAuthenticated) {
+    const next = `${location.pathname}${location.search}`;
+    const to = `/admin/sign-in?next=${encodeURIComponent(next)}`;
+    return <Navigate to={to} replace />;
   }
 
   return <>{children}</>;
 }
 
 export function AdminSignOutButton() {
-  const { signOut } = useClerk();
-
+  const { signOut } = useSession();
   return (
     <button
       className="admin-sign-out-btn"
       data-testid="admin-sign-out-btn"
-      onClick={() => void signOut({ redirectUrl: '/admin/sign-in' })}
+      onClick={() => signOut()}
     >
       Sign out
     </button>

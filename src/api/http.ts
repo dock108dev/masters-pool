@@ -1,5 +1,17 @@
 import type { ApiClient, SlugCheckResponse, VerifySessionResponse, CreateClubRequest, CreateClubResponse, OnboardingWizardSubmitRequest, OnboardingWizardSubmitResponse, SendInvitesRequest, PendingClub } from './types';
 import type {
+  AuthUser,
+  AuthTokenResponse,
+  LoginRequest,
+  SignupRequest,
+  MagicLinkRequest,
+  VerifyMagicLinkRequest,
+  PasswordResetRequest,
+  PasswordResetConfirm,
+} from '../auth/types';
+import { readTokens, writeTokens, clearTokens } from '../auth/tokenStorage';
+import { AUTH_ENDPOINTS } from './types';
+import type {
   ClubCode,
   PoolSummary,
   PoolFieldResponse,
@@ -42,6 +54,66 @@ async function parseErrorBody(res: Response, context: string): Promise<Record<st
   });
 }
 
+/**
+ * Auth-aware fetch: injects `Authorization: Bearer <access>` when a token
+ * is present. On 401 with a refresh token available, calls `/auth/refresh`
+ * once and retries the original request. On refresh failure, clears tokens
+ * and surfaces a 401 to the caller (pages render the "sign in" CTA).
+ *
+ * Never called for the `/auth/*` endpoints themselves (those use plain fetch)
+ * to avoid refresh-loop recursion.
+ */
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessTokenOnce(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+  const tokens = readTokens();
+  if (!tokens?.refreshToken) return null;
+  refreshInFlight = (async () => {
+    try {
+      const res = await authFetch(AUTH_ENDPOINTS.refresh(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${tokens.refreshToken}`,
+        },
+      });
+      if (!res.ok) {
+        clearTokens();
+        return null;
+      }
+      const body = (await res.json()) as AuthTokenResponse;
+      writeTokens({
+        accessToken: body.access_token,
+        refreshToken: body.refresh_token ?? tokens.refreshToken,
+      });
+      return body.access_token;
+    } catch {
+      clearTokens();
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+export async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const tokens = readTokens();
+  const headers = new Headers(init.headers);
+  if (tokens?.accessToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+  }
+  let res = await fetch(input, { ...init, headers });
+  if (res.status !== 401 || !tokens?.refreshToken) return res;
+  const newAccess = await refreshAccessTokenOnce();
+  if (!newAccess) return res;
+  const retryHeaders = new Headers(init.headers);
+  retryHeaders.set('Authorization', `Bearer ${newAccess}`);
+  res = await fetch(input, { ...init, headers: retryHeaders });
+  return res;
+}
+
 /** Extracts a string detail message from a parsed error body, falling back to a default. */
 function extractDetail(err: Record<string, unknown> | null, fallback: string): string {
   const d = err?.detail;
@@ -55,7 +127,7 @@ function extractDetail(err: Record<string, unknown> | null, fallback: string): s
  */
 export class HttpApiClient implements ApiClient {
   async getActivePool(clubCode: ClubCode): Promise<PoolSummary | null> {
-    const res = await fetch(API_ENDPOINTS.pools(clubCode));
+    const res = await authFetch(API_ENDPOINTS.pools(clubCode));
     if (!res.ok) throw new Error(`Failed to fetch pools: ${res.status}`);
     const data = await res.json();
     const pools = data.pools ?? [];
@@ -63,13 +135,13 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getPoolDetail(poolId: number): Promise<PoolSummary> {
-    const res = await fetch(API_ENDPOINTS.poolDetail(poolId));
+    const res = await authFetch(API_ENDPOINTS.poolDetail(poolId));
     if (!res.ok) throw new Error(`Failed to fetch pool: ${res.status}`);
     return res.json();
   }
 
   async getPoolField(poolId: number): Promise<PoolFieldResponse> {
-    const res = await fetch(API_ENDPOINTS.poolField(poolId));
+    const res = await authFetch(API_ENDPOINTS.poolField(poolId));
     if (!res.ok) throw new Error(`Failed to fetch field: ${res.status}`);
     const data = await res.json();
 
@@ -86,7 +158,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async submitEntry(poolId: number, request: EntrySubmissionRequest): Promise<EntrySubmissionResponse> {
-    const res = await fetch(API_ENDPOINTS.submitEntry(poolId), {
+    const res = await authFetch(API_ENDPOINTS.submitEntry(poolId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -115,7 +187,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getLeaderboard(poolId: number): Promise<LeaderboardData> {
-    const res = await fetch(API_ENDPOINTS.leaderboard(poolId));
+    const res = await authFetch(API_ENDPOINTS.leaderboard(poolId));
     if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.status}`);
     const data = await res.json();
 
@@ -162,14 +234,14 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getLockStatus(poolId: number): Promise<PoolLockStatus> {
-    const res = await fetch(API_ENDPOINTS.lockStatus(poolId));
+    const res = await authFetch(API_ENDPOINTS.lockStatus(poolId));
     if (!res.ok) throw new Error(`Failed to fetch lock status: ${res.status}`);
     return res.json();
   }
 
   async getPoolEvents(poolId: number, page = 1, pageSize = 50): Promise<PoolEventsPage> {
     const url = `${API_ENDPOINTS.poolEvents(poolId)}?page=${page}&page_size=${pageSize}`;
-    const res = await fetch(url);
+    const res = await authFetch(url);
     if (!res.ok) throw new Error(`Failed to fetch pool events: ${res.status}`);
     const data = await res.json();
     return {
@@ -189,7 +261,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getTournaments(): Promise<TournamentOption[]> {
-    const res = await fetch(API_ENDPOINTS.tournaments());
+    const res = await authFetch(API_ENDPOINTS.tournaments());
     if (!res.ok) throw new Error(`Failed to fetch tournaments: ${res.status}`);
     const data = await res.json();
     return (data.tournaments ?? data).map((t: Record<string, unknown>) => ({
@@ -200,7 +272,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async createPool(request: CreatePoolRequest): Promise<PoolSummary> {
-    const res = await fetch(API_ENDPOINTS.createPool(), {
+    const res = await authFetch(API_ENDPOINTS.createPool(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -225,14 +297,14 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getPoolByToken(clubCode: ClubCode, poolToken: string): Promise<PoolSummary | null> {
-    const res = await fetch(API_ENDPOINTS.poolByToken(clubCode, poolToken));
+    const res = await authFetch(API_ENDPOINTS.poolByToken(clubCode, poolToken));
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`Failed to fetch pool by token: ${res.status}`);
     return res.json();
   }
 
   async getPoolEntries(poolId: number): Promise<PoolEntriesResponse> {
-    const res = await fetch(API_ENDPOINTS.poolEntries(poolId));
+    const res = await authFetch(API_ENDPOINTS.poolEntries(poolId));
     if (!res.ok) throw new Error(`Failed to fetch entries: ${res.status}`);
     const data = await res.json();
     const entries = (data.entries ?? []).map((e: Record<string, unknown>) => ({
@@ -251,19 +323,19 @@ export class HttpApiClient implements ApiClient {
   }
 
   async downloadPoolEntriesCsv(poolId: number): Promise<Blob> {
-    const res = await fetch(API_ENDPOINTS.poolEntriesCsv(poolId));
+    const res = await authFetch(API_ENDPOINTS.poolEntriesCsv(poolId));
     if (!res.ok) throw new Error(`CSV download failed: ${res.status}`);
     return res.blob();
   }
 
   async getClubBranding(clubCode: ClubCode): Promise<ClubBranding> {
-    const res = await fetch(API_ENDPOINTS.clubBranding(clubCode));
+    const res = await authFetch(API_ENDPOINTS.clubBranding(clubCode));
     if (!res.ok) throw new Error(`Failed to fetch branding: ${res.status}`);
     return res.json();
   }
 
   async updateClubBranding(clubCode: ClubCode, branding: Partial<ClubBranding>): Promise<ClubBranding> {
-    const res = await fetch(API_ENDPOINTS.clubBranding(clubCode), {
+    const res = await authFetch(API_ENDPOINTS.clubBranding(clubCode), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(branding),
@@ -273,32 +345,32 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getClubBilling(clubCode: ClubCode): Promise<ClubBilling> {
-    const res = await fetch(API_ENDPOINTS.clubBilling(clubCode));
+    const res = await authFetch(API_ENDPOINTS.clubBilling(clubCode));
     if (!res.ok) throw new Error(`Failed to fetch billing: ${res.status}`);
     return res.json();
   }
 
   async createBillingPortalSession(clubCode: ClubCode): Promise<{ url: string }> {
-    const res = await fetch(API_ENDPOINTS.billingPortal(clubCode), { method: 'POST' });
+    const res = await authFetch(API_ENDPOINTS.billingPortal(clubCode), { method: 'POST' });
     if (!res.ok) throw new Error(`Failed to create billing portal session: ${res.status}`);
     return res.json();
   }
 
   async getClubPools(clubCode: ClubCode): Promise<PoolSummary[]> {
-    const res = await fetch(API_ENDPOINTS.clubPools(clubCode));
+    const res = await authFetch(API_ENDPOINTS.clubPools(clubCode));
     if (!res.ok) throw new Error(`Failed to fetch club pools: ${res.status}`);
     const data = await res.json();
     return data.pools ?? [];
   }
 
   async getReferralInfo(clubCode: ClubCode): Promise<ReferralInfo> {
-    const res = await fetch(API_ENDPOINTS.referralInfo(clubCode));
+    const res = await authFetch(API_ENDPOINTS.referralInfo(clubCode));
     if (!res.ok) throw new Error(`Failed to fetch referral info: ${res.status}`);
     return res.json();
   }
 
   async applyReferralCredit(referralCode: string, referredClubCode: ClubCode): Promise<ReferralCreditResponse> {
-    const res = await fetch(API_ENDPOINTS.referralCredit(), {
+    const res = await authFetch(API_ENDPOINTS.referralCredit(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ referral_code: referralCode, referred_club_code: referredClubCode }),
@@ -314,19 +386,19 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getAdminStats(): Promise<AdminStats> {
-    const res = await fetch(API_ENDPOINTS.adminStats());
+    const res = await authFetch(API_ENDPOINTS.adminStats());
     if (!res.ok) throw new Error(`Failed to fetch admin stats: ${res.status}`);
     return res.json();
   }
 
   async getPollHealth(): Promise<AdminPollHealth> {
-    const res = await fetch(API_ENDPOINTS.pollHealth());
+    const res = await authFetch(API_ENDPOINTS.pollHealth());
     if (!res.ok) throw new Error(`Failed to fetch poll health: ${res.status}`);
     return res.json();
   }
 
   async submitClubClaim(claim: ClubClaim): Promise<ClubClaimResponse> {
-    const res = await fetch(API_ENDPOINTS.clubClaims(), {
+    const res = await authFetch(API_ENDPOINTS.clubClaims(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(claim),
@@ -350,7 +422,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async createCheckoutSession(): Promise<{ session_url: string }> {
-    const res = await fetch(API_ENDPOINTS.checkoutSession(), { method: 'POST' });
+    const res = await authFetch(API_ENDPOINTS.checkoutSession(), { method: 'POST' });
     if (!res.ok) {
       const err = await parseErrorBody(res, 'createCheckoutSession');
       throw new Error(extractDetail(err, `Checkout session failed: ${res.status}`));
@@ -359,13 +431,13 @@ export class HttpApiClient implements ApiClient {
   }
 
   async checkSlugAvailability(slug: string, signal?: AbortSignal): Promise<SlugCheckResponse> {
-    const res = await fetch(API_ENDPOINTS.slugCheck(slug), { signal });
+    const res = await authFetch(API_ENDPOINTS.slugCheck(slug), { signal });
     if (!res.ok) throw new Error(`Slug check failed: ${res.status}`);
     return res.json();
   }
 
   async verifyCheckoutSession(sessionId: string): Promise<VerifySessionResponse> {
-    const res = await fetch(API_ENDPOINTS.verifyCheckoutSession(), {
+    const res = await authFetch(API_ENDPOINTS.verifyCheckoutSession(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId }),
@@ -378,7 +450,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async createClub(request: CreateClubRequest): Promise<CreateClubResponse> {
-    const res = await fetch(API_ENDPOINTS.createClub(), {
+    const res = await authFetch(API_ENDPOINTS.createClub(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -393,7 +465,7 @@ export class HttpApiClient implements ApiClient {
   async submitOnboardingWizard(
     request: OnboardingWizardSubmitRequest,
   ): Promise<OnboardingWizardSubmitResponse> {
-    const res = await fetch(API_ENDPOINTS.wizardSubmit(), {
+    const res = await authFetch(API_ENDPOINTS.wizardSubmit(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -406,19 +478,19 @@ export class HttpApiClient implements ApiClient {
   }
 
   async lockPool(poolId: number): Promise<PoolSummary> {
-    const res = await fetch(API_ENDPOINTS.lockPool(poolId), { method: 'POST' });
+    const res = await authFetch(API_ENDPOINTS.lockPool(poolId), { method: 'POST' });
     if (!res.ok) throw new Error(`Failed to lock pool: ${res.status}`);
     return res.json();
   }
 
   async unlockPool(poolId: number): Promise<PoolSummary> {
-    const res = await fetch(API_ENDPOINTS.unlockPool(poolId), { method: 'POST' });
+    const res = await authFetch(API_ENDPOINTS.unlockPool(poolId), { method: 'POST' });
     if (!res.ok) throw new Error(`Failed to unlock pool: ${res.status}`);
     return res.json();
   }
 
   async sendPoolInvites(poolId: number, request: SendInvitesRequest): Promise<void> {
-    const res = await fetch(API_ENDPOINTS.poolInvites(poolId), {
+    const res = await authFetch(API_ENDPOINTS.poolInvites(poolId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
@@ -430,14 +502,14 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getPendingClub(): Promise<PendingClub | null> {
-    const res = await fetch(API_ENDPOINTS.pendingClub());
+    const res = await authFetch(API_ENDPOINTS.pendingClub());
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`Failed to fetch pending club: ${res.status}`);
     return res.json();
   }
 
   async getPlayerRoster(tournamentId: number): Promise<Player[]> {
-    const res = await fetch(API_ENDPOINTS.playerRoster(tournamentId));
+    const res = await authFetch(API_ENDPOINTS.playerRoster(tournamentId));
     if (!res.ok) throw new Error(`Failed to fetch player roster: ${res.status}`);
     const data = await res.json();
     return (data.players ?? data).map((p: Record<string, unknown>) => ({
@@ -449,7 +521,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getLiveTournamentLeaderboard(tournamentId: number): Promise<PlayerScore[]> {
-    const res = await fetch(API_ENDPOINTS.tournamentLeaderboard(tournamentId));
+    const res = await authFetch(API_ENDPOINTS.tournamentLeaderboard(tournamentId));
     if (!res.ok) throw new Error(`Failed to fetch tournament leaderboard: ${res.status}`);
     const data = await res.json();
     return (data.leaderboard ?? data).map((p: Record<string, unknown>) => ({
@@ -464,7 +536,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getEntry(entryId: number): Promise<PoolEntry> {
-    const res = await fetch(API_ENDPOINTS.entry(entryId));
+    const res = await authFetch(API_ENDPOINTS.entry(entryId));
     if (res.status === 404) {
       throw Object.assign(new Error(`Entry ${entryId} not found`), { status: 404 });
     }
@@ -486,7 +558,7 @@ export class HttpApiClient implements ApiClient {
   }
 
   async getEntryLeaderboard(entryId: number): Promise<EntryLeaderboardResponse | null> {
-    const res = await fetch(API_ENDPOINTS.entryLeaderboard(entryId));
+    const res = await authFetch(API_ENDPOINTS.entryLeaderboard(entryId));
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`Failed to fetch entry leaderboard: ${res.status}`);
     const data = await res.json();
@@ -525,7 +597,7 @@ export class HttpApiClient implements ApiClient {
 
   async lookupEntries(poolId: number, email: string): Promise<EntryLookupResult> {
     const url = `${API_ENDPOINTS.lookupEntries(poolId)}?email=${encodeURIComponent(email)}`;
-    const res = await fetch(url);
+    const res = await authFetch(url);
     if (res.status === 404) {
       throw Object.assign(new Error(`No entry found for ${email}`), { status: 404 });
     }
@@ -546,5 +618,121 @@ export class HttpApiClient implements ApiClient {
     }));
 
     return { email, entries };
+  }
+
+  // ===== Auth =====
+  // All /auth/* methods use plain fetch to avoid recursing through authFetch's
+  // refresh-on-401 logic. /auth/refresh is reached via refreshAccessTokenOnce.
+
+  async login(request: LoginRequest): Promise<AuthTokenResponse> {
+    const res = await fetch(AUTH_ENDPOINTS.login(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await parseErrorBody(res, 'login');
+      throw Object.assign(
+        new Error(extractDetail(err, res.status === 401 ? 'Invalid email or password.' : `Login failed: ${res.status}`)),
+        { status: res.status },
+      );
+    }
+    return res.json();
+  }
+
+  async signup(request: SignupRequest): Promise<AuthTokenResponse> {
+    const res = await fetch(AUTH_ENDPOINTS.signup(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await parseErrorBody(res, 'signup');
+      throw Object.assign(
+        new Error(extractDetail(err, res.status === 409 ? 'That email is already registered.' : `Signup failed: ${res.status}`)),
+        { status: res.status },
+      );
+    }
+    return res.json();
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<AuthTokenResponse> {
+    const res = await fetch(AUTH_ENDPOINTS.refresh(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${refreshToken}`,
+      },
+    });
+    if (!res.ok) throw Object.assign(new Error(`Refresh failed: ${res.status}`), { status: res.status });
+    return res.json();
+  }
+
+  async getCurrentUser(): Promise<AuthUser | null> {
+    const res = await authFetch(AUTH_ENDPOINTS.me());
+    if (!res.ok) return null;
+    const data = (await res.json()) as Record<string, unknown>;
+    if (data.id == null) return null;
+    return {
+      id: data.id as number,
+      email: (data.email as string) ?? '',
+      role: ((data.role as AuthUser['role']) ?? 'user'),
+      memberships: Array.isArray(data.memberships)
+        ? (data.memberships as AuthUser['memberships'])
+        : undefined,
+    };
+  }
+
+  async requestMagicLink(request: MagicLinkRequest): Promise<void> {
+    const res = await fetch(AUTH_ENDPOINTS.magicLinkRequest(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await parseErrorBody(res, 'requestMagicLink');
+      throw new Error(extractDetail(err, `Magic link request failed: ${res.status}`));
+    }
+  }
+
+  async verifyMagicLink(request: VerifyMagicLinkRequest): Promise<AuthTokenResponse> {
+    const res = await fetch(AUTH_ENDPOINTS.magicLinkVerify(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await parseErrorBody(res, 'verifyMagicLink');
+      const fallback = res.status === 410 ? 'This link has expired or already been used.' : `Magic link verification failed: ${res.status}`;
+      throw Object.assign(new Error(extractDetail(err, fallback)), { status: res.status });
+    }
+    return res.json();
+  }
+
+  async requestPasswordReset(request: PasswordResetRequest): Promise<void> {
+    const res = await fetch(AUTH_ENDPOINTS.passwordResetRequest(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await parseErrorBody(res, 'requestPasswordReset');
+      throw new Error(extractDetail(err, `Password reset request failed: ${res.status}`));
+    }
+  }
+
+  async confirmPasswordReset(request: PasswordResetConfirm): Promise<void> {
+    const res = await fetch(AUTH_ENDPOINTS.passwordReset(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const err = await parseErrorBody(res, 'confirmPasswordReset');
+      throw Object.assign(
+        new Error(extractDetail(err, res.status === 400 ? 'Reset link is invalid or expired.' : `Password reset failed: ${res.status}`)),
+        { status: res.status },
+      );
+    }
   }
 }

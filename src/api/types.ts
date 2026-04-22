@@ -1,4 +1,14 @@
 import type {
+  AuthUser,
+  AuthTokenResponse,
+  LoginRequest,
+  SignupRequest,
+  MagicLinkRequest,
+  VerifyMagicLinkRequest,
+  PasswordResetRequest,
+  PasswordResetConfirm,
+} from '../auth/types';
+import type {
   ClubCode,
   PoolSummary,
   PoolFieldResponse,
@@ -77,6 +87,16 @@ export interface SendInvitesRequest {
 }
 
 export interface ApiClient {
+  // Auth — SDA /auth/*
+  login(request: LoginRequest): Promise<AuthTokenResponse>;
+  signup(request: SignupRequest): Promise<AuthTokenResponse>;
+  refreshAccessToken(refreshToken: string): Promise<AuthTokenResponse>;
+  getCurrentUser(): Promise<AuthUser | null>;
+  requestMagicLink(request: MagicLinkRequest): Promise<void>;
+  verifyMagicLink(request: VerifyMagicLinkRequest): Promise<AuthTokenResponse>;
+  requestPasswordReset(request: PasswordResetRequest): Promise<void>;
+  confirmPasswordReset(request: PasswordResetConfirm): Promise<void>;
+
   getActivePool(clubCode: ClubCode): Promise<PoolSummary | null>;
   getPoolDetail(poolId: number): Promise<PoolSummary>;
   getPoolField(poolId: number): Promise<PoolFieldResponse>;
@@ -116,6 +136,22 @@ export interface ApiClient {
 }
 
 export const API_BASE_URL = '/api';
+
+/** SDA auth endpoints live at `/auth/*` (not under `/api/`). Both the
+ *  Vite dev proxy and nginx proxy `/auth/` to the SDA backend alongside
+ *  `/api/`. */
+export const AUTH_BASE_URL = '/auth';
+
+export const AUTH_ENDPOINTS = {
+  login: () => `${AUTH_BASE_URL}/login`,
+  signup: () => `${AUTH_BASE_URL}/signup`,
+  refresh: () => `${AUTH_BASE_URL}/refresh`,
+  me: () => `${AUTH_BASE_URL}/me`,
+  magicLinkRequest: () => `${AUTH_BASE_URL}/magic-link/request`,
+  magicLinkVerify: () => `${AUTH_BASE_URL}/magic-link/verify`,
+  passwordResetRequest: () => `${AUTH_BASE_URL}/password/reset-request`,
+  passwordReset: () => `${AUTH_BASE_URL}/password/reset`,
+} as const;
 
 export const API_ENDPOINTS = {
   pools: (clubCode: ClubCode) => `${API_BASE_URL}/golf/pools?club_code=${clubCode}&active_only=true`,

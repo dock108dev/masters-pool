@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { ClerkProvider } from '@clerk/clerk-react';
 import { useAnalytics } from './hooks/useAnalytics';
+import { AuthProvider } from './auth/AuthProvider';
 import { ClubRoot } from './pages/ClubRoot';
 import {
   HomePageWrapper,
@@ -25,6 +25,10 @@ import { CheckoutSuccessPage } from './pages/onboard/CheckoutSuccessPage';
 import { OnboardingWizardPage } from './pages/onboard/OnboardingWizardPage';
 import { SuperAdminDashboard } from './pages/superadmin/SuperAdminDashboard';
 import { AdminSignInPage } from './pages/admin/AdminSignInPage';
+import { SignUpPage } from './pages/admin/SignUpPage';
+import { MagicLinkVerifyPage } from './pages/admin/MagicLinkVerifyPage';
+import { PasswordResetRequestPage } from './pages/admin/PasswordResetRequestPage';
+import { PasswordResetPage } from './pages/admin/PasswordResetPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { CoordinatorLayout } from './pages/CoordinatorLayout';
 import { classifyHost, type HostKind } from './config/host';
@@ -71,40 +75,40 @@ function SuperAdminRoutes() {
 }
 
 function ClubRoutes() {
-  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
-
   return (
-    <ClerkProvider publishableKey={publishableKey ?? ''}>
-      <Routes>
-        <Route path="/" element={<ClubRoot />}>
-          <Route index element={<HomePageWrapper />} />
-          <Route path="rules" element={<RulesPageWrapper />} />
-          <Route path="entry" element={<EntryPageWrapper />} />
-          <Route path="confirmation" element={<ConfirmationPageWrapper />} />
-          <Route path="leaderboard" element={<LeaderboardPageWrapper />} />
-          <Route path="leaderboard/entry/:entryId" element={<EntryDetailPageWrapper />} />
-          <Route path="lookup" element={<LookupPageWrapper />} />
-          <Route path="enter/:poolToken" element={<PublicEntryPageWrapper />} />
-          <Route path="enter/:poolToken/confirmation" element={<PublicConfirmationPageWrapper />} />
-          <Route path="admin/sign-in" element={<AdminSignInPage />} />
-          <Route
-            path="admin"
-            element={
-              <ProtectedRoute>
-                <CoordinatorLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<PoolListingPageWrapper />} />
-            <Route path="pools" element={<PoolListingPageWrapper />} />
-            <Route path="pools/new" element={<PoolWizardPageWrapper />} />
-            <Route path="pools/:poolId" element={<CoordinatorDashboardPageWrapper />} />
-            <Route path="branding" element={<BrandingSettingsPageWrapper />} />
-            <Route path="billing" element={<BillingPageWrapper />} />
-          </Route>
+    <Routes>
+      <Route path="/" element={<ClubRoot />}>
+        <Route index element={<HomePageWrapper />} />
+        <Route path="rules" element={<RulesPageWrapper />} />
+        <Route path="entry" element={<EntryPageWrapper />} />
+        <Route path="confirmation" element={<ConfirmationPageWrapper />} />
+        <Route path="leaderboard" element={<LeaderboardPageWrapper />} />
+        <Route path="leaderboard/entry/:entryId" element={<EntryDetailPageWrapper />} />
+        <Route path="lookup" element={<LookupPageWrapper />} />
+        <Route path="enter/:poolToken" element={<PublicEntryPageWrapper />} />
+        <Route path="enter/:poolToken/confirmation" element={<PublicConfirmationPageWrapper />} />
+        <Route path="admin/sign-in" element={<AdminSignInPage />} />
+        <Route path="admin/sign-up" element={<SignUpPage />} />
+        <Route path="admin/auth/magic-link" element={<MagicLinkVerifyPage />} />
+        <Route path="admin/auth/forgot" element={<PasswordResetRequestPage />} />
+        <Route path="admin/auth/reset" element={<PasswordResetPage />} />
+        <Route
+          path="admin"
+          element={
+            <ProtectedRoute>
+              <CoordinatorLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<PoolListingPageWrapper />} />
+          <Route path="pools" element={<PoolListingPageWrapper />} />
+          <Route path="pools/new" element={<PoolWizardPageWrapper />} />
+          <Route path="pools/:poolId" element={<CoordinatorDashboardPageWrapper />} />
+          <Route path="branding" element={<BrandingSettingsPageWrapper />} />
+          <Route path="billing" element={<BillingPageWrapper />} />
         </Route>
-      </Routes>
-    </ClerkProvider>
+      </Route>
+    </Routes>
   );
 }
 
@@ -124,9 +128,11 @@ function routesForHost(host: HostKind) {
 export default function App() {
   const host = classifyHost();
   return (
-    <BrowserRouter>
-      <RouteChangeTracker />
-      {routesForHost(host)}
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <RouteChangeTracker />
+        {routesForHost(host)}
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
