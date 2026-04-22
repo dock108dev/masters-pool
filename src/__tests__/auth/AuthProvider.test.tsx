@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { AuthProvider } from '../../auth/AuthProvider';
 import { useSession } from '../../auth/useSession';
 import { MockApiClient, MOCK_AUTH_USER } from '../../api/mock/adapters';
