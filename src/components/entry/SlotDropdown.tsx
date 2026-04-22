@@ -106,6 +106,8 @@ export function SlotDropdown({
           onClick={() => (isOpen ? close() : open())}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error ? `slot-error-${slotIndex}` : undefined}
           data-testid={`slot-trigger-${slotIndex}`}
         >
           {selectedGolfer ? (
@@ -135,7 +137,12 @@ export function SlotDropdown({
       </div>
 
       {error && (
-        <p className="slot-dropdown__error" role="alert" data-testid={`slot-error-${slotIndex}`}>
+        <p
+          id={`slot-error-${slotIndex}`}
+          className="slot-dropdown__error"
+          role="alert"
+          data-testid={`slot-error-${slotIndex}`}
+        >
           {error}
         </p>
       )}

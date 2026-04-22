@@ -4,7 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { LeaderboardPage } from '../../pages/LeaderboardPage';
 import { getClubConfig } from '../../config/clubs';
-import { MOCK_PRE_TOURNAMENT_RVCC_POOL, MOCK_EMPTY_LEADERBOARD } from '../../api/mock/data';
+import { MOCK_PRE_TOURNAMENT_RVCC_POOL, MOCK_EMPTY_LEADERBOARD, MOCK_RVCC_POOL } from '../../api/mock/data';
 
 let activeClient: MockApiClient = new MockApiClient(0);
 
@@ -120,14 +120,51 @@ describe('LeaderboardPage', () => {
 
     vi.spyOn(activeClient, 'getLeaderboard').mockRejectedValue(new Error('network error'));
 
-    // 3 poll intervals at 15s each = 46s to be safe
+    // 3 poll intervals at 60s each = 181s to trigger 3 failures
     await act(async () => {
-      vi.advanceTimersByTime(46_000);
+      vi.advanceTimersByTime(181_000);
     });
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/Unable to update/i)).toBeInTheDocument();
     // Leaderboard data still visible
     expect(screen.getByTestId('leaderboard-table')).toBeInTheDocument();
+  });
+
+  it('polls leaderboard every 60s when pool status is live', async () => {
+    const spy = vi.spyOn(activeClient, 'getLeaderboard');
+    renderLeaderboardPage();
+    await screen.findByTestId('leaderboard-table');
+    const callsAfterLoad = spy.mock.calls.length;
+
+    await act(async () => {
+      vi.advanceTimersByTime(61_000);
+    });
+
+    expect(spy.mock.calls.length).toBe(callsAfterLoad + 1);
+  });
+
+  it('does not poll when pool status is not live', async () => {
+    vi.spyOn(activeClient, 'getActivePool').mockResolvedValue({
+      ...MOCK_RVCC_POOL,
+      status: 'final',
+    });
+    const spy = vi.spyOn(activeClient, 'getLeaderboard');
+    renderLeaderboardPage();
+    await screen.findByTestId('leaderboard-table');
+    const callsAfterLoad = spy.mock.calls.length;
+
+    await act(async () => {
+      vi.advanceTimersByTime(61_000);
+    });
+
+    expect(spy.mock.calls.length).toBe(callsAfterLoad);
+  });
+
+  it('shows scores-not-available when leaderboard data cannot be fetched', async () => {
+    vi.spyOn(activeClient, 'getLeaderboard').mockRejectedValue(new Error('no data'));
+    renderLeaderboardPage();
+    expect(await screen.findByTestId('scores-not-available')).toBeInTheDocument();
+    expect(screen.getByText(/Scores not yet available/i)).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import {
   validateRvccPicks,
   validateCrestmontPicks,
   validateEntryForm,
+  validateSlotSelections,
   canAddGolfer,
 } from '../../utils/validation';
 import { CLUB_CONFIGS } from '../../config/clubs';
@@ -464,5 +465,47 @@ describe('canAddGolfer', () => {
     const result = canAddGolfer(8, [], rvccConfig, null);
     expect(result.allowed).toBe(true);
     expect(result.reason).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateSlotSelections
+// ---------------------------------------------------------------------------
+describe('validateSlotSelections', () => {
+  it('returns an error string for every null slot', () => {
+    const result = validateSlotSelections([null, null, null]);
+    expect(result).toHaveLength(3);
+    expect(result.every((e) => typeof e === 'string')).toBe(true);
+  });
+
+  it('returns null for every filled slot', () => {
+    const result = validateSlotSelections([1, 2, 3, 4, 5, 6, 7]);
+    expect(result.every((e) => e === null)).toBe(true);
+  });
+
+  it('returns null for filled slots and error strings for null slots in mixed arrays', () => {
+    const result = validateSlotSelections([1, null, 3, null]);
+    expect(result[0]).toBeNull();
+    expect(result[1]).toMatch(/select a golfer/i);
+    expect(result[2]).toBeNull();
+    expect(result[3]).toMatch(/select a golfer/i);
+  });
+
+  it('returns an empty array for an empty input', () => {
+    const result = validateSlotSelections([]);
+    expect(result).toHaveLength(0);
+  });
+
+  it('preserves array length — output length matches input length', () => {
+    const input: (number | null)[] = [null, 1, null, null, 2, null, null];
+    const result = validateSlotSelections(input);
+    expect(result).toHaveLength(input.length);
+  });
+
+  it('error message includes the phrase "Pick required" or prompts selection', () => {
+    const [err] = validateSlotSelections([null]);
+    expect(err).toBeTruthy();
+    // Matches either wording variant
+    expect(err).toMatch(/select a golfer|pick required/i);
   });
 });

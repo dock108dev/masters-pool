@@ -1,16 +1,38 @@
 import { useParams, useLocation, Link } from 'react-router-dom';
 import type { ClubConfig, EntrySubmissionResponse } from '../types/domain';
+import { useApi } from '../hooks/useApi';
+import { apiClient } from '../api/client';
 
 interface PublicConfirmationPageProps {
   clubConfig: ClubConfig;
 }
 
-export function PublicConfirmationPage({ clubConfig: _clubConfig }: PublicConfirmationPageProps) {
+export function PublicConfirmationPage({ clubConfig }: PublicConfirmationPageProps) {
   const { poolToken } = useParams<{ poolToken: string }>();
   const location = useLocation();
   const confirmation = (
     location.state as { confirmation?: EntrySubmissionResponse } | null
   )?.confirmation;
+
+  const { data: pool } = useApi(
+    () =>
+      poolToken
+        ? apiClient.getPoolByToken(clubConfig.code, poolToken)
+        : Promise.resolve(null),
+    [clubConfig.code, poolToken ?? ''],
+  );
+
+  const { data: lockStatus } = useApi(
+    () =>
+      pool
+        ? apiClient.getLockStatus(pool.id)
+        : Promise.resolve({ locked: false as const, locked_at: null, lock_time: null }),
+    [pool?.id ?? 0],
+  );
+
+  const isEntryClosed =
+    (pool != null && (pool.status === 'locked' || pool.status === 'final' || pool.status === 'archived')) ||
+    lockStatus?.locked === true;
 
   const entryUrl =
     typeof window !== 'undefined' && poolToken
@@ -61,7 +83,7 @@ export function PublicConfirmationPage({ clubConfig: _clubConfig }: PublicConfir
       )}
       <div className="confirmation-actions">
         <Link to="/leaderboard" className="btn btn-primary">View Leaderboard</Link>
-        {entryUrl && (
+        {entryUrl && !isEntryClosed && (
           <Link to={`/enter/${poolToken}`} className="btn btn-secondary">
             Submit Another Entry
           </Link>

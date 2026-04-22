@@ -189,6 +189,8 @@ export interface TournamentOption {
   year: number;
   cut_rule_type: CutRuleType;
   default_format: 'flat' | 'bucketed';
+  /** ISO datetime string for Round 1 first tee time; used to compute deadline warnings. */
+  start_date?: string;
 }
 
 // Bucket definition — used in the pool creation wizard and rules_json for bucketed pools
@@ -310,6 +312,30 @@ export interface EntryLookupEntry {
 export interface EntryLookupResult {
   email: string;
   entries: EntryLookupEntry[];
+}
+
+// Tournament player roster
+export type PlayerTier = 'elite' | 'strong' | 'mid' | 'longshot';
+
+export interface Player {
+  id: number;
+  name: string;
+  worldRank: number | null;
+  tier: PlayerTier;
+}
+
+export type PlayerStatus = 'active' | 'cut' | 'wd';
+
+export interface PlayerScore extends Player {
+  totalStrokes: number | null;
+  thru: number | null;
+  status: PlayerStatus;
+}
+
+// Entry leaderboard — single-entry scoring response for /leaderboard/entry/:entryId
+export interface EntryLeaderboardResponse {
+  standing: LeaderboardStanding;
+  last_scored_at: string;
 }
 
 // Club claim — submitted from the onboard page by prospective coordinators

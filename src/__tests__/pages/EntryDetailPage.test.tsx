@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { EntryDetailPage } from '../../pages/EntryDetailPage';
 import { getClubConfig } from '../../config/clubs';
-import type { LeaderboardData, PoolSummary } from '../../types/domain';
-import { MOCK_RVCC_POOL, MOCK_RVCC_LEADERBOARD } from '../../api/mock/data';
+import type { LeaderboardStanding, PoolSummary } from '../../types/domain';
+import { MOCK_RVCC_POOL, MOCK_RVCC_LEADERBOARD, MOCK_RVCC_ENTRIES } from '../../api/mock/data';
 
 let activeClient: MockApiClient = new MockApiClient(0);
 
@@ -112,20 +112,18 @@ describe('EntryDetailPage', () => {
       ...MOCK_RVCC_POOL,
       rules_json: { ...MOCK_RVCC_POOL.rules_json, wd_score_penalty: 6 },
     };
-    const wdLeaderboard: LeaderboardData = {
-      ...MOCK_RVCC_LEADERBOARD,
-      standings: [
-        {
-          ...MOCK_RVCC_LEADERBOARD.standings[1], // Jane Doe — has a WD pick
-          picks: MOCK_RVCC_LEADERBOARD.standings[1].picks.map((p) =>
-            p.status === 'wd' ? { ...p, total_score: 6 } : p,
-          ),
-        },
-      ],
+    const wdStanding: LeaderboardStanding = {
+      ...MOCK_RVCC_LEADERBOARD.standings[1], // Jane Doe — has a WD pick
+      picks: MOCK_RVCC_LEADERBOARD.standings[1].picks.map((p) =>
+        p.status === 'wd' ? { ...p, total_score: 6 } : p,
+      ),
     };
 
     vi.spyOn(activeClient, 'getActivePool').mockResolvedValue(poolWithPenalty);
-    vi.spyOn(activeClient, 'getLeaderboard').mockResolvedValue(wdLeaderboard);
+    vi.spyOn(activeClient, 'getEntryLeaderboard').mockResolvedValue({
+      standing: wdStanding,
+      last_scored_at: MOCK_RVCC_LEADERBOARD.last_scored_at,
+    });
 
     renderDetailPage(2);
     await screen.findByTestId('entry-detail-table');
@@ -141,15 +139,38 @@ describe('EntryDetailPage', () => {
     expect(wdRow).toHaveTextContent('+6');
   });
 
-  // Acceptance criteria: entry not found renders ErrorState, not a crash
-  it('renders ErrorState when entryId does not exist', async () => {
-    renderDetailPage(99999);
-    expect(await screen.findByText(/Entry #99999 not found/i)).toBeInTheDocument();
+  // Acceptance criteria: pre-tournament state shows picks without scores and a notice
+  it('shows pre-tournament notice and pick list when scoring data is unavailable', async () => {
+    vi.spyOn(activeClient, 'getEntryLeaderboard').mockResolvedValue(null);
+
+    renderDetailPage(1);
+    expect(await screen.findByTestId('pre-tournament-banner')).toBeInTheDocument();
+    expect(screen.getByText('Tournament not started')).toBeInTheDocument();
+
+    // Picks listed without score table
+    expect(screen.getByTestId('entry-picks-list')).toBeInTheDocument();
+    expect(screen.queryByTestId('entry-detail-table')).not.toBeInTheDocument();
+
+    // All picks from MOCK_RVCC_ENTRIES entry 1 rendered
+    const entry1Picks = MOCK_RVCC_ENTRIES.entries[0].picks;
+    for (const pick of entry1Picks) {
+      expect(screen.getByText(pick.player_name)).toBeInTheDocument();
+    }
   });
 
-  it('renders ErrorState for non-numeric entryId', async () => {
+  // Acceptance criteria: invalid entryId renders an error state with link back to /lookup
+  it('renders error state with lookup link when entryId does not exist', async () => {
+    renderDetailPage(99999);
+    expect(await screen.findByTestId('entry-not-found')).toBeInTheDocument();
+    expect(screen.getByText(/Entry #99999 not found/i)).toBeInTheDocument();
+    const lookupLink = screen.getByRole('link', { name: /search for your entry/i });
+    expect(lookupLink).toHaveAttribute('href', '/lookup');
+  });
+
+  it('renders error state for non-numeric entryId', async () => {
     renderDetailPage('bogus');
     expect(await screen.findByText(/Entry #bogus not found/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /search for your entry/i })).toBeInTheDocument();
   });
 });
 

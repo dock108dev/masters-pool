@@ -11,14 +11,17 @@ import type {
   ReferralInfo,
   AdminStats,
   AdminPollHealth,
+  Player,
+  PlayerScore,
+  PlayerStatus,
 } from '../../types/domain';
 
 export const MOCK_TOURNAMENTS: TournamentOption[] = [
-  { id: 101, name: 'The Masters 2026', year: 2026, cut_rule_type: 'masters', default_format: 'flat' },
-  { id: 102, name: 'PGA Championship 2026', year: 2026, cut_rule_type: 'pga_championship', default_format: 'flat' },
-  { id: 103, name: 'US Open 2026', year: 2026, cut_rule_type: 'us_open', default_format: 'flat' },
-  { id: 104, name: 'The Open 2026', year: 2026, cut_rule_type: 'the_open', default_format: 'flat' },
-  { id: 100, name: 'The Masters 2025', year: 2025, cut_rule_type: 'masters', default_format: 'flat' },
+  { id: 101, name: 'The Masters 2026', year: 2026, cut_rule_type: 'masters', default_format: 'flat', start_date: '2026-04-09T12:00:00Z' },
+  { id: 102, name: 'PGA Championship 2026', year: 2026, cut_rule_type: 'pga_championship', default_format: 'flat', start_date: '2026-05-21T12:00:00Z' },
+  { id: 103, name: 'US Open 2026', year: 2026, cut_rule_type: 'us_open', default_format: 'flat', start_date: '2026-06-18T12:00:00Z' },
+  { id: 104, name: 'The Open 2026', year: 2026, cut_rule_type: 'the_open', default_format: 'flat', start_date: '2026-07-16T11:00:00Z' },
+  { id: 100, name: 'The Masters 2025', year: 2025, cut_rule_type: 'masters', default_format: 'flat', start_date: '2025-04-10T12:00:00Z' },
 ];
 
 export const MOCK_RVCC_POOL: PoolSummary = {
@@ -430,6 +433,42 @@ export const MOCK_ADMIN_STATS: AdminStats = {
   active_clubs: 2,
   mrr_cents: 19900,
 };
+
+export const MOCK_PLAYER_ROSTER: Player[] = [
+  { id: 18417, name: 'Scottie Scheffler', worldRank: 1, tier: 'elite' },
+  { id: 27349, name: 'Xander Schauffele', worldRank: 2, tier: 'elite' },
+  { id: 28237, name: 'Rory McIlroy', worldRank: 3, tier: 'elite' },
+  { id: 21209, name: 'Jon Rahm', worldRank: 4, tier: 'elite' },
+  { id: 31560, name: 'Collin Morikawa', worldRank: 5, tier: 'elite' },
+  { id: 52955, name: 'Ludvig Aberg', worldRank: 6, tier: 'elite' },
+  { id: 30925, name: 'Wyndham Clark', worldRank: 7, tier: 'strong' },
+  { id: 38818, name: 'Viktor Hovland', worldRank: 8, tier: 'strong' },
+  { id: 14937, name: 'Brooks Koepka', worldRank: 9, tier: 'strong' },
+  { id: 30911, name: 'Patrick Cantlay', worldRank: 10, tier: 'strong' },
+  { id: 26302, name: 'Tommy Fleetwood', worldRank: 11, tier: 'strong' },
+  { id: 25580, name: 'Shane Lowry', worldRank: 12, tier: 'strong' },
+  { id: 13958, name: 'Hideki Matsuyama', worldRank: 13, tier: 'mid' },
+  { id: 35533, name: 'Sahith Theegala', worldRank: 14, tier: 'mid' },
+  { id: 14256, name: 'Tony Finau', worldRank: 15, tier: 'mid' },
+  { id: 33948, name: 'Matt Fitzpatrick', worldRank: 16, tier: 'mid' },
+  { id: 25396, name: 'Russell Henley', worldRank: 17, tier: 'mid' },
+  { id: 11217, name: 'Keegan Bradley', worldRank: 18, tier: 'mid' },
+  { id: 11469, name: 'Brian Harman', worldRank: 19, tier: 'longshot' },
+  { id: 35450, name: 'Sungjae Im', worldRank: 20, tier: 'longshot' },
+  { id: 48081, name: 'Min Woo Lee', worldRank: 21, tier: 'longshot' },
+  { id: 10577, name: 'Jason Day', worldRank: 22, tier: 'longshot' },
+  { id: 23983, name: 'Corey Conners', worldRank: 23, tier: 'longshot' },
+  { id: 10046, name: 'Adam Scott', worldRank: 24, tier: 'longshot' },
+];
+
+export const MOCK_TOURNAMENT_LEADERBOARD: PlayerScore[] = MOCK_PLAYER_ROSTER.map(
+  (p, i): PlayerScore => ({
+    ...p,
+    totalStrokes: i < 18 ? 280 + i : null,
+    thru: i < 18 ? 18 : null,
+    status: (i < 18 ? 'active' : i < 21 ? 'cut' : 'wd') as PlayerStatus,
+  }),
+);
 
 export const MOCK_ADMIN_POLL_HEALTH: AdminPollHealth = {
   tournaments: [

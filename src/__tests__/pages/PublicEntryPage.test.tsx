@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient, MOCK_LOCKED_AT } from '../../api/mock/adapters';
@@ -33,8 +34,8 @@ function renderPublicEntryPage(
           element={<PublicEntryPage clubConfig={rvccConfig} />}
         />
         <Route
-          path="/enter/:poolToken/confirmation"
-          element={<div data-testid="public-confirmation-page">Confirmed</div>}
+          path="/leaderboard"
+          element={<div data-testid="leaderboard-page">Leaderboard</div>}
         />
       </Routes>
     </MemoryRouter>
@@ -42,15 +43,23 @@ function renderPublicEntryPage(
 }
 
 describe('PublicEntryPage', () => {
+  describe('loading state', () => {
+    it('shows a loading indicator before data resolves', () => {
+      renderPublicEntryPage();
+      // delay(0) is a macrotask — loading state is visible on initial render
+      expect(screen.getByRole('status')).toBeInTheDocument();
+    });
+  });
+
   describe('locked pool', () => {
-    it('renders Pool is Closed state and hides the form', async () => {
+    it('renders Entries are Closed state and hides the form', async () => {
       activeClient = new MockApiClient(0, [MOCK_RVCC_POOL.id]);
       renderPublicEntryPage();
 
       await waitFor(() => {
         expect(screen.getByTestId('pool-locked-banner')).toBeInTheDocument();
       });
-      expect(screen.getByText(/Pool is Closed/i)).toBeInTheDocument();
+      expect(screen.getByText(/Entries are Closed/i)).toBeInTheDocument();
       expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
     });
 
@@ -59,10 +68,46 @@ describe('PublicEntryPage', () => {
       renderPublicEntryPage();
 
       await waitFor(() => {
+        const banner = screen.queryByTestId('pool-locked-banner');
+        expect(banner?.textContent).toContain(new Date(MOCK_LOCKED_AT).toLocaleString());
+      });
+    });
+
+    it('locked banner includes a link to the leaderboard', async () => {
+      activeClient = new MockApiClient(0, [MOCK_RVCC_POOL.id]);
+      renderPublicEntryPage();
+
+      await waitFor(() => {
         expect(screen.getByTestId('pool-locked-banner')).toBeInTheDocument();
       });
-      const banner = screen.getByTestId('pool-locked-banner');
-      expect(banner.textContent).toContain(new Date(MOCK_LOCKED_AT).toLocaleString());
+      expect(screen.getByRole('link', { name: /leaderboard/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('closed pool (status = final)', () => {
+    it('renders Entries are Closed state and hides the form', async () => {
+      activeClient = new MockApiClient(
+        0, [], [], null, false, false, [], false, 'Mock Club', [MOCK_RVCC_POOL.id],
+      );
+      renderPublicEntryPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('pool-locked-banner')).toBeInTheDocument();
+      });
+      expect(screen.getByText(/Entries are Closed/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
+    });
+
+    it('closed pool banner includes a link to the leaderboard', async () => {
+      activeClient = new MockApiClient(
+        0, [], [], null, false, false, [], false, 'Mock Club', [MOCK_RVCC_POOL.id],
+      );
+      renderPublicEntryPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('pool-locked-banner')).toBeInTheDocument();
+      });
+      expect(screen.getByRole('link', { name: /leaderboard/i })).toBeInTheDocument();
     });
   });
 
@@ -76,13 +121,40 @@ describe('PublicEntryPage', () => {
       expect(screen.queryByTestId('pool-locked-banner')).not.toBeInTheDocument();
     });
 
-    it('shows "Pool Not Found" for an unknown token', async () => {
+    it('shows token-error state for an unknown/expired token', async () => {
       renderPublicEntryPage(`/enter/unknown-token-that-does-not-exist`);
 
       await waitFor(() => {
-        expect(screen.getByText(/Pool Not Found/i)).toBeInTheDocument();
+        expect(screen.getByTestId('token-error')).toBeInTheDocument();
       });
+      expect(screen.getByText(/Pool Not Found/i)).toBeInTheDocument();
       expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('successful submission', () => {
+    it('redirects to /leaderboard?submitted=true after submitting all picks', async () => {
+      const user = userEvent.setup();
+      renderPublicEntryPage();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('entry-form')).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByTestId('display-name-input'), 'Test Entry');
+
+      // RVCC requires 7 picks; roster is sorted by worldRank so select top-7
+      const golferIds = [18417, 27349, 28237, 21209, 31560, 52955, 30925];
+      for (let i = 0; i < golferIds.length; i++) {
+        await user.click(screen.getByTestId(`slot-trigger-${i}`));
+        await user.click(screen.getByTestId(`slot-option-${golferIds[i]}`));
+      }
+
+      await user.click(screen.getByTestId('submit-button'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('leaderboard-page')).toBeInTheDocument();
+      });
     });
   });
 });

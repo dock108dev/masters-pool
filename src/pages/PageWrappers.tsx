@@ -11,6 +11,7 @@ import { CoordinatorDashboardPage } from './CoordinatorDashboardPage';
 import { PublicEntryPage } from './PublicEntryPage';
 import { PublicConfirmationPage } from './PublicConfirmationPage';
 import { BrandingSettingsPage } from './BrandingSettingsPage';
+import { BillingPage } from './BillingPage';
 import { PoolListingPage } from './PoolListingPage';
 
 export function HomePageWrapper() {
@@ -71,6 +72,11 @@ export function PublicConfirmationPageWrapper() {
 export function BrandingSettingsPageWrapper() {
   const { clubConfig } = useClubOutletContext();
   return <BrandingSettingsPage clubConfig={clubConfig} />;
+}
+
+export function BillingPageWrapper() {
+  const { clubConfig } = useClubOutletContext();
+  return <BillingPage clubConfig={clubConfig} />;
 }
 
 export function PoolListingPageWrapper() {

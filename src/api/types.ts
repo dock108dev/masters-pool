@@ -11,6 +11,7 @@ import type {
   TournamentOption,
   CreatePoolRequest,
   PoolEntriesResponse,
+  PoolEntry,
   ClubBranding,
   ClubBilling,
   ReferralInfo,
@@ -19,7 +20,61 @@ import type {
   AdminPollHealth,
   ClubClaim,
   ClubClaimResponse,
+  Player,
+  PlayerScore,
+  EntryLeaderboardResponse,
 } from '../types/domain';
+
+export interface SlugCheckResponse {
+  available: boolean;
+  reason: string | null;
+}
+
+export interface PendingClub {
+  club_slug: string;
+  club_name: string;
+  onboard_step: number;
+  payment_session_id: string;
+}
+
+export interface VerifySessionResponse {
+  status: 'pending' | 'provisioned';
+  club_name: string | null;
+  email: string | null;
+  club_slug: string | null;
+  onboard_url: string | null;
+}
+
+export interface CreateClubRequest {
+  session_id: string;
+  club_name: string;
+  slug: string;
+}
+
+export interface CreateClubResponse {
+  club_slug: string;
+  onboard_url: string;
+}
+
+export interface OnboardingWizardSubmitRequest {
+  club_slug: string;
+  pool_name: string;
+  tournament_id: number;
+  entry_deadline: string;
+  max_entries_per_email: number;
+  rules_json: CreatePoolRequest['rules_json'];
+}
+
+export interface OnboardingWizardSubmitResponse {
+  pool_id: number;
+  redirect_url: string;
+  pool_token: string;
+  entry_url: string;
+}
+
+export interface SendInvitesRequest {
+  emails: string[];
+}
 
 export interface ApiClient {
   getActivePool(clubCode: ClubCode): Promise<PoolSummary | null>;
@@ -45,6 +100,19 @@ export interface ApiClient {
   getAdminStats(): Promise<AdminStats>;
   getPollHealth(): Promise<AdminPollHealth>;
   submitClubClaim(claim: ClubClaim): Promise<ClubClaimResponse>;
+  createCheckoutSession(): Promise<{ session_url: string }>;
+  checkSlugAvailability(slug: string, signal?: AbortSignal): Promise<SlugCheckResponse>;
+  verifyCheckoutSession(sessionId: string): Promise<VerifySessionResponse>;
+  createClub(request: CreateClubRequest): Promise<CreateClubResponse>;
+  submitOnboardingWizard(request: OnboardingWizardSubmitRequest): Promise<OnboardingWizardSubmitResponse>;
+  sendPoolInvites(poolId: number, request: SendInvitesRequest): Promise<void>;
+  lockPool(poolId: number): Promise<PoolSummary>;
+  unlockPool(poolId: number): Promise<PoolSummary>;
+  getPendingClub(): Promise<PendingClub | null>;
+  getPlayerRoster(tournamentId: number): Promise<Player[]>;
+  getLiveTournamentLeaderboard(tournamentId: number): Promise<PlayerScore[]>;
+  getEntry(entryId: number): Promise<PoolEntry>;
+  getEntryLeaderboard(entryId: number): Promise<EntryLeaderboardResponse | null>;
 }
 
 export const API_BASE_URL = '/api';
@@ -73,4 +141,17 @@ export const API_ENDPOINTS = {
   adminStats: () => `${API_BASE_URL}/admin/stats`,
   pollHealth: () => `${API_BASE_URL}/admin/poll-health`,
   clubClaims: () => `${API_BASE_URL}/onboarding/club-claims`,
+  checkoutSession: () => `${API_BASE_URL}/checkout/session`,
+  verifyCheckoutSession: () => `${API_BASE_URL}/checkout/verify`,
+  slugCheck: (slug: string) => `${API_BASE_URL}/clubs/slug-check?slug=${encodeURIComponent(slug)}`,
+  createClub: () => `${API_BASE_URL}/clubs`,
+  wizardSubmit: () => `${API_BASE_URL}/clubs/wizard/submit`,
+  poolInvites: (poolId: number) => `${API_BASE_URL}/golf/pools/${poolId}/invites`,
+  lockPool: (poolId: number) => `${API_BASE_URL}/golf/pools/${poolId}/lock`,
+  unlockPool: (poolId: number) => `${API_BASE_URL}/golf/pools/${poolId}/unlock`,
+  pendingClub: () => `${API_BASE_URL}/clubs/pending`,
+  playerRoster: (tournamentId: number) => `${API_BASE_URL}/golf/tournaments/${tournamentId}/roster`,
+  tournamentLeaderboard: (tournamentId: number) => `${API_BASE_URL}/golf/tournaments/${tournamentId}/leaderboard`,
+  entry: (entryId: number) => `${API_BASE_URL}/golf/entries/${entryId}`,
+  entryLeaderboard: (entryId: number) => `${API_BASE_URL}/golf/entries/${entryId}/leaderboard`,
 } as const;

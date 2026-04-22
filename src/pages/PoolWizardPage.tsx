@@ -267,12 +267,16 @@ export function PoolWizardPage({ clubConfig }: PoolWizardPageProps) {
   const [publishError, setPublishError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiClient.getTournaments().then(setTournaments).catch(() => {});
+    apiClient.getTournaments().then(setTournaments).catch((err: unknown) => {
+      console.error('[PoolWizardPage] Failed to load tournaments:', err);
+    });
     apiClient.getActivePool(clubConfig.code).then((pool) => {
       if (pool) {
         navigate(`/admin/pools/${pool.id}`, { replace: true });
       }
-    }).catch(() => {});
+    }).catch((err: unknown) => {
+      console.error('[PoolWizardPage] Failed to check for active pool:', err);
+    });
   }, [clubConfig.code, navigate]);
 
   function patch(updates: Partial<WizardState>) {

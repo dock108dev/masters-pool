@@ -1,5 +1,5 @@
-import type { ApiClient } from '../types';
-import type { ClubCode, EntrySubmissionRequest, PoolEvent, CreatePoolRequest, ClubBranding, ClubBilling, ClubClaim, ClubClaimResponse } from '../../types/domain';
+import type { ApiClient, SlugCheckResponse, VerifySessionResponse, CreateClubRequest, CreateClubResponse, OnboardingWizardSubmitRequest, OnboardingWizardSubmitResponse, SendInvitesRequest, PendingClub } from '../types';
+import type { ClubCode, EntrySubmissionRequest, PoolEvent, CreatePoolRequest, ClubBranding, ClubBilling, ClubClaim, ClubClaimResponse, PoolStatus, Player, PlayerScore, EntryLeaderboardResponse } from '../../types/domain';
 import {
   MOCK_RVCC_POOL,
   MOCK_CRESTMONT_POOL,
@@ -18,9 +18,15 @@ import {
   MOCK_CRESTMONT_REFERRAL,
   MOCK_ADMIN_STATS,
   MOCK_ADMIN_POLL_HEALTH,
+  MOCK_PLAYER_ROSTER,
+  MOCK_TOURNAMENT_LEADERBOARD,
 } from './data';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Use microtask (Promise.resolve) for zero latency so mock resolves within the
+// current act() boundary in tests — setTimeout(0) fires outside act() when fake
+// timers with shouldAdvanceTime are active, breaking state-update assertions.
+const delay = (ms: number) =>
+  ms === 0 ? Promise.resolve() : new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Sentinel locked_at returned for pools configured as locked in tests. */
 export const MOCK_LOCKED_AT = '2026-04-09T11:00:00Z';
@@ -33,12 +39,19 @@ const ALL_MOCK_POOLS = [MOCK_RVCC_POOL, MOCK_CRESTMONT_POOL];
 export class MockApiClient implements ApiClient {
   private latencyMs: number;
   private readonly lockedPoolIds: ReadonlySet<number>;
+  private readonly closedPoolIds: ReadonlySet<number>;
   private readonly mockEvents: PoolEvent[];
   private readonly mockLockTime: string | null;
   private readonly billingRequired: boolean;
   private readonly referredClubCompleted: boolean;
+  private readonly takenSlugs: ReadonlySet<string>;
+  private readonly checkoutSessionProvisioned: boolean;
+  private readonly mockSessionClubName: string;
+  private readonly hasPendingClub: boolean;
   /** Tracks submitted email+pool combos to simulate 409 duplicate responses. */
   private readonly submittedEntries = new Set<string>();
+  /** Mutable pool status overrides set by lockPool/unlockPool calls. */
+  private readonly poolStatusOverrides: Map<number, PoolStatus> = new Map();
 
   constructor(
     latencyMs = 300,
@@ -47,26 +60,41 @@ export class MockApiClient implements ApiClient {
     mockLockTime: string | null = MOCK_LOCK_TIME,
     billingRequired = false,
     referredClubCompleted = false,
+    takenSlugs: string[] = [],
+    checkoutSessionProvisioned = false,
+    mockSessionClubName = 'Mock Club',
+    closedPoolIds: number[] = [],
+    hasPendingClub = false,
   ) {
     this.latencyMs = latencyMs;
     this.lockedPoolIds = new Set(lockedPoolIds);
+    this.closedPoolIds = new Set(closedPoolIds);
     this.mockEvents = mockEvents;
     this.mockLockTime = mockLockTime;
     this.billingRequired = billingRequired;
     this.referredClubCompleted = referredClubCompleted;
+    this.takenSlugs = new Set(takenSlugs);
+    this.checkoutSessionProvisioned = checkoutSessionProvisioned;
+    this.mockSessionClubName = mockSessionClubName;
+    this.hasPendingClub = hasPendingClub;
   }
 
   async getActivePool(clubCode: ClubCode) {
     await delay(this.latencyMs);
-    if (clubCode === 'rvcc') return MOCK_RVCC_POOL;
-    if (clubCode === 'crestmont') return MOCK_CRESTMONT_POOL;
-    return null;
+    const pool = clubCode === 'rvcc' ? MOCK_RVCC_POOL : clubCode === 'crestmont' ? MOCK_CRESTMONT_POOL : null;
+    if (!pool) return null;
+    const statusOverride = this.poolStatusOverrides.get(pool.id);
+    if (statusOverride) return { ...pool, status: statusOverride };
+    if (this.closedPoolIds.has(pool.id)) return { ...pool, status: 'final' as const };
+    if (this.lockedPoolIds.has(pool.id)) return { ...pool, status: 'locked' as const };
+    return pool;
   }
 
   async getPoolDetail(poolId: number) {
     await delay(this.latencyMs);
-    if (poolId === MOCK_CRESTMONT_POOL.id) return MOCK_CRESTMONT_POOL;
-    return MOCK_RVCC_POOL;
+    const base = poolId === MOCK_CRESTMONT_POOL.id ? MOCK_CRESTMONT_POOL : MOCK_RVCC_POOL;
+    const statusOverride = this.poolStatusOverrides.get(poolId);
+    return statusOverride ? { ...base, status: statusOverride } : base;
   }
 
   async getPoolField(poolId: number) {
@@ -164,7 +192,12 @@ export class MockApiClient implements ApiClient {
     const pool = ALL_MOCK_POOLS.find(
       (p) => p.club_code === clubCode && p.pool_token === poolToken
     );
-    return pool ?? null;
+    if (!pool) return null;
+    const statusOverride = this.poolStatusOverrides.get(pool.id);
+    if (statusOverride) return { ...pool, status: statusOverride };
+    if (this.closedPoolIds.has(pool.id)) return { ...pool, status: 'final' as const };
+    if (this.lockedPoolIds.has(pool.id)) return { ...pool, status: 'locked' as const };
+    return pool;
   }
 
   async getPoolEntries(poolId: number) {
@@ -240,12 +273,125 @@ export class MockApiClient implements ApiClient {
     };
   }
 
+  async createCheckoutSession(): Promise<{ session_url: string }> {
+    await delay(this.latencyMs);
+    return { session_url: 'https://checkout.stripe.com/pay/mock_cs_test_xxx' };
+  }
+
+  async checkSlugAvailability(slug: string, _signal?: AbortSignal): Promise<SlugCheckResponse> {
+    await delay(this.latencyMs);
+    const available = !this.takenSlugs.has(slug);
+    return { available, reason: available ? null : 'taken' };
+  }
+
   async submitClubClaim(_claim: ClubClaim): Promise<ClubClaimResponse> {
     await delay(this.latencyMs);
     return {
       claim_id: `claim_${Date.now().toString(36)}`,
       received_at: new Date().toISOString(),
     };
+  }
+
+  async verifyCheckoutSession(_sessionId: string): Promise<VerifySessionResponse> {
+    await delay(this.latencyMs);
+    if (this.checkoutSessionProvisioned) {
+      return {
+        status: 'provisioned',
+        club_name: this.mockSessionClubName,
+        email: 'owner@example.com',
+        club_slug: 'mock-club',
+        onboard_url: '/admin',
+      };
+    }
+    return {
+      status: 'pending',
+      club_name: this.mockSessionClubName,
+      email: 'owner@example.com',
+      club_slug: null,
+      onboard_url: null,
+    };
+  }
+
+  async createClub(request: CreateClubRequest): Promise<CreateClubResponse> {
+    await delay(this.latencyMs);
+    return {
+      club_slug: request.slug,
+      onboard_url: '/admin',
+    };
+  }
+
+  async submitOnboardingWizard(
+    request: OnboardingWizardSubmitRequest,
+  ): Promise<OnboardingWizardSubmitResponse> {
+    await delay(this.latencyMs);
+    const poolId = 9999;
+    const token = 'mock-pool-token-9999';
+    return {
+      pool_id: poolId,
+      redirect_url: `/admin/pools/${poolId}`,
+      pool_token: token,
+      entry_url: `https://${request.club_slug}.countryclubpicks.com/enter/${token}`,
+    };
+  }
+
+  async lockPool(poolId: number) {
+    await delay(this.latencyMs);
+    this.poolStatusOverrides.set(poolId, 'locked');
+    const base = poolId === MOCK_CRESTMONT_POOL.id ? MOCK_CRESTMONT_POOL : MOCK_RVCC_POOL;
+    return { ...base, status: 'locked' as const };
+  }
+
+  async unlockPool(poolId: number) {
+    await delay(this.latencyMs);
+    this.poolStatusOverrides.set(poolId, 'open');
+    const base = poolId === MOCK_CRESTMONT_POOL.id ? MOCK_CRESTMONT_POOL : MOCK_RVCC_POOL;
+    return { ...base, status: 'open' as const };
+  }
+
+  async getPendingClub(): Promise<PendingClub | null> {
+    await delay(this.latencyMs);
+    if (!this.hasPendingClub) return null;
+    return {
+      club_slug: 'pending-club',
+      club_name: 'Pending Club',
+      onboard_step: 1,
+      payment_session_id: 'cs_mock_pending',
+    };
+  }
+
+  async getPlayerRoster(_tournamentId: number): Promise<Player[]> {
+    await delay(this.latencyMs);
+    return [...MOCK_PLAYER_ROSTER];
+  }
+
+  async getLiveTournamentLeaderboard(_tournamentId: number): Promise<PlayerScore[]> {
+    await delay(this.latencyMs);
+    return [...MOCK_TOURNAMENT_LEADERBOARD];
+  }
+
+  async sendPoolInvites(_poolId: number, _request: SendInvitesRequest): Promise<void> {
+    await delay(this.latencyMs);
+  }
+
+  async getEntry(entryId: number) {
+    await delay(this.latencyMs);
+    const allEntries = [...MOCK_RVCC_ENTRIES.entries, ...MOCK_CRESTMONT_ENTRIES.entries];
+    const entry = allEntries.find((e) => e.entry_id === entryId);
+    if (!entry) {
+      throw Object.assign(new Error(`Entry ${entryId} not found`), { status: 404 });
+    }
+    return entry;
+  }
+
+  async getEntryLeaderboard(entryId: number): Promise<EntryLeaderboardResponse | null> {
+    await delay(this.latencyMs);
+    const allStandings = [
+      ...MOCK_RVCC_LEADERBOARD.standings,
+      ...MOCK_CRESTMONT_LEADERBOARD.standings,
+    ];
+    const standing = allStandings.find((s) => s.entry_id === entryId);
+    if (!standing) return null;
+    return { standing, last_scored_at: MOCK_RVCC_LEADERBOARD.last_scored_at };
   }
 
   async lookupEntries(_poolId: number, email: string) {

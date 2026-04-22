@@ -1,13 +1,32 @@
 import { Link, useLocation } from 'react-router-dom';
 import type { ClubConfig, EntrySubmissionResponse } from '../types/domain';
+import { useApi } from '../hooks/useApi';
+import { apiClient } from '../api/client';
 
 interface ConfirmationPageProps {
   clubConfig: ClubConfig;
 }
 
-export function ConfirmationPage({ clubConfig: _clubConfig }: ConfirmationPageProps) {
+export function ConfirmationPage({ clubConfig }: ConfirmationPageProps) {
   const location = useLocation();
   const confirmation = (location.state as { confirmation?: EntrySubmissionResponse } | null)?.confirmation;
+
+  const { data: pool } = useApi(
+    () => apiClient.getActivePool(clubConfig.code),
+    [clubConfig.code],
+  );
+
+  const { data: lockStatus } = useApi(
+    () =>
+      pool
+        ? apiClient.getLockStatus(pool.id)
+        : Promise.resolve({ locked: false as const, locked_at: null, lock_time: null }),
+    [pool?.id ?? 0],
+  );
+
+  const isEntryClosed =
+    (pool != null && (pool.status === 'locked' || pool.status === 'final' || pool.status === 'archived')) ||
+    lockStatus?.locked === true;
 
   if (!confirmation) {
     return (
@@ -41,7 +60,9 @@ export function ConfirmationPage({ clubConfig: _clubConfig }: ConfirmationPagePr
       </div>
       <div className="confirmation-actions">
         <Link to="/leaderboard" className="btn btn-primary">View Leaderboard</Link>
-        <Link to="/entry" className="btn btn-secondary">Submit Another Entry</Link>
+        {!isEntryClosed && (
+          <Link to="/entry" className="btn btn-secondary">Submit Another Entry</Link>
+        )}
       </div>
     </div>
   );

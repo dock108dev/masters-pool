@@ -129,7 +129,7 @@ describe('PoolListingPage', () => {
     renderPoolListing('rvcc', rvccConfig);
 
     await waitFor(() => {
-      expect(screen.getByTestId('empty-pools')).toBeInTheDocument();
+      expect(screen.getByTestId('no-pools')).toBeInTheDocument();
     });
 
     expect(screen.getByText('No pools yet')).toBeInTheDocument();

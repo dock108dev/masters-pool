@@ -1,10 +1,10 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { MockApiClient } from '../../api/mock/adapters';
 import { CoordinatorDashboardPage } from '../../pages/CoordinatorDashboardPage';
 import { getClubConfig } from '../../config/clubs';
-import { MOCK_SUSPENDED_BILLING } from '../../api/mock/data';
+import { MOCK_SUSPENDED_BILLING, MOCK_RVCC_POOL } from '../../api/mock/data';
 
 let activeClient: MockApiClient = new MockApiClient(0);
 
@@ -93,6 +93,66 @@ describe('CoordinatorDashboardPage', () => {
     await waitFor(() => {
       expect(csvSpy).toHaveBeenCalledWith(1);
     });
+  });
+
+  it('uses pool name in download filename', async () => {
+    const anchors: HTMLAnchorElement[] = [];
+    const origCreate = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = origCreate(tag) as HTMLElement;
+      if (tag === 'a') anchors.push(el as HTMLAnchorElement);
+      return el;
+    });
+
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('download-csv-btn'));
+    fireEvent.click(screen.getByTestId('download-csv-btn'));
+
+    await waitFor(() => anchors.some((a) => a.download !== ''));
+    const downloadAnchor = anchors.find((a) => a.download !== '');
+    expect(downloadAnchor?.download).toBe('the-masters-2026-rvcc-pool-entries.csv');
+
+    vi.restoreAllMocks();
+  });
+
+  it('shows loading state on button while download is in progress', async () => {
+    let resolve!: (b: Blob) => void;
+    vi.spyOn(activeClient, 'downloadPoolEntriesCsv').mockReturnValue(
+      new Promise<Blob>((res) => { resolve = res; }),
+    );
+
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('download-csv-btn'));
+
+    fireEvent.click(screen.getByTestId('download-csv-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('download-csv-btn')).toBeDisabled();
+      expect(screen.getByTestId('download-csv-btn')).toHaveTextContent('Downloading…');
+    });
+
+    await act(async () => { resolve(new Blob(['a,b'], { type: 'text/csv' })); });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('download-csv-btn')).not.toBeDisabled();
+      expect(screen.getByTestId('download-csv-btn')).toHaveTextContent('Download CSV');
+    });
+  });
+
+  it('shows inline error message when CSV download fails', async () => {
+    vi.spyOn(activeClient, 'downloadPoolEntriesCsv').mockRejectedValue(new Error('network error'));
+
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('download-csv-btn'));
+
+    fireEvent.click(screen.getByTestId('download-csv-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('csv-error')).toBeInTheDocument();
+      expect(screen.getByTestId('csv-error')).toHaveTextContent('Failed to download CSV');
+    });
+
+    expect(screen.getByTestId('download-csv-btn')).not.toBeDisabled();
   });
 
   it('shows event log section', async () => {
@@ -210,6 +270,214 @@ describe('CoordinatorDashboardPage — billing section', () => {
         'noopener,noreferrer',
       );
     });
+  });
+});
+
+describe('CoordinatorDashboardPage — pool status card', () => {
+  beforeEach(() => {
+    activeClient = new MockApiClient(0);
+  });
+
+  it.each([
+    ['draft', 'Draft'],
+    ['open', 'Open'],
+    ['locked', 'Locked'],
+    ['live', 'Live'],
+  ] as const)('shows %s badge for pool with status %s', async (status, label) => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('pool-status-badge'));
+    expect(screen.getByTestId('pool-status-badge')).toHaveTextContent(label);
+  });
+
+  it('shows entry count in status card', async () => {
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('pool-entry-count'));
+    expect(screen.getByTestId('pool-entry-count')).toHaveTextContent('3 entries');
+  });
+
+  it('shows deadline in status card', async () => {
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('pool-deadline'));
+    // deadline is in the past for MOCK_RVCC_POOL (2026-04-09), today is 2026-04-21
+    expect(screen.getByTestId('pool-deadline')).toHaveTextContent('Deadline passed');
+  });
+});
+
+describe('CoordinatorDashboardPage — lock/unlock pool', () => {
+  beforeEach(() => {
+    activeClient = new MockApiClient(0);
+  });
+
+  it('shows Lock Pool button when pool is open', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'open' });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('lock-pool-btn'));
+    expect(screen.queryByTestId('unlock-pool-btn')).not.toBeInTheDocument();
+  });
+
+  it('shows Lock Pool button when pool is draft', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'draft' });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('lock-pool-btn'));
+    expect(screen.queryByTestId('unlock-pool-btn')).not.toBeInTheDocument();
+  });
+
+  it('shows Unlock Pool button when pool is locked', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'locked' });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('unlock-pool-btn'));
+    expect(screen.queryByTestId('lock-pool-btn')).not.toBeInTheDocument();
+  });
+
+  it('shows neither Lock nor Unlock when pool is live', async () => {
+    // MOCK_RVCC_POOL is already live
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('actions-bar'));
+    expect(screen.queryByTestId('lock-pool-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('unlock-pool-btn')).not.toBeInTheDocument();
+  });
+
+  it('shows confirmation modal with entry count when Lock Pool is clicked', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'open' });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('lock-pool-btn'));
+
+    fireEvent.click(screen.getByTestId('lock-pool-btn'));
+
+    expect(screen.getByTestId('lock-confirm-modal')).toBeInTheDocument();
+    // RVCC has 3 entries — modal should show that count
+    expect(screen.getByTestId('lock-confirm-modal')).toHaveTextContent('3');
+  });
+
+  it('calls lockPool and refetches on confirmation', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'open' });
+    const lockSpy = vi.spyOn(activeClient, 'lockPool').mockResolvedValue({
+      ...MOCK_RVCC_POOL,
+      status: 'locked',
+    });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('lock-pool-btn'));
+
+    fireEvent.click(screen.getByTestId('lock-pool-btn'));
+    await waitFor(() => screen.getByTestId('lock-confirm-modal'));
+    fireEvent.click(screen.getByTestId('confirm-lock-btn'));
+
+    await waitFor(() => {
+      expect(lockSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  it('dismisses modal without locking when Cancel is clicked', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'open' });
+    const lockSpy = vi.spyOn(activeClient, 'lockPool');
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('lock-pool-btn'));
+
+    fireEvent.click(screen.getByTestId('lock-pool-btn'));
+    expect(screen.getByTestId('lock-confirm-modal')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('cancel-lock-btn'));
+    expect(screen.queryByTestId('lock-confirm-modal')).not.toBeInTheDocument();
+    expect(lockSpy).not.toHaveBeenCalled();
+  });
+
+  it('calls unlockPool when Unlock Pool is clicked', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'locked' });
+    const unlockSpy = vi.spyOn(activeClient, 'unlockPool').mockResolvedValue({
+      ...MOCK_RVCC_POOL,
+      status: 'open',
+    });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('unlock-pool-btn'));
+
+    fireEvent.click(screen.getByTestId('unlock-pool-btn'));
+
+    await waitFor(() => {
+      expect(unlockSpy).toHaveBeenCalledWith(1);
+    });
+  });
+});
+
+describe('CoordinatorDashboardPage — entries empty state', () => {
+  beforeEach(() => {
+    activeClient = new MockApiClient(0);
+  });
+
+  it('shows empty state when pool has no entries', async () => {
+    vi.spyOn(activeClient, 'getPoolEntries').mockResolvedValue({
+      pool_id: 1,
+      entries: [],
+      count: 0,
+    });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('entries-empty-state'));
+    expect(screen.getByTestId('entries-empty-state')).toHaveTextContent('No entries yet.');
+    expect(screen.queryByTestId('entries-table')).not.toBeInTheDocument();
+  });
+});
+
+describe('CoordinatorDashboardPage — leaderboard polling', () => {
+  beforeEach(() => {
+    activeClient = new MockApiClient(0);
+  });
+
+  it('fetches leaderboard when pool is live', async () => {
+    const leaderboardSpy = vi.spyOn(activeClient, 'getLeaderboard');
+    renderDashboard(1); // MOCK_RVCC_POOL is live
+    await waitFor(() => {
+      expect(leaderboardSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  it('does not fetch leaderboard when pool is not live', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'open' });
+    const leaderboardSpy = vi.spyOn(activeClient, 'getLeaderboard');
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('pool-status-badge'));
+    expect(screen.getByTestId('pool-status-badge')).toHaveTextContent('Open');
+    expect(leaderboardSpy).not.toHaveBeenCalled();
+  });
+
+  it('shows score column in entries table when pool is live', async () => {
+    renderDashboard(1); // live pool
+    await waitFor(() => screen.getByTestId('entries-table'));
+    const headers = screen.getAllByRole('columnheader');
+    expect(headers.map((h) => h.textContent)).toContain('Score');
+  });
+
+  it('does not show score column when pool is not live', async () => {
+    vi.spyOn(activeClient, 'getPoolDetail').mockResolvedValue({ ...MOCK_RVCC_POOL, status: 'open' });
+    renderDashboard(1);
+    await waitFor(() => screen.getByTestId('entries-table'));
+    const headers = screen.getAllByRole('columnheader');
+    expect(headers.map((h) => h.textContent)).not.toContain('Score');
+  });
+
+  it('polls leaderboard every 60s when pool is live', async () => {
+    vi.useFakeTimers();
+    const leaderboardSpy = vi.spyOn(activeClient, 'getLeaderboard');
+
+    renderDashboard(1);
+
+    // Let initial async fetches settle
+    await act(async () => {
+      vi.runAllTimers();
+      await Promise.resolve();
+    });
+
+    const callCountAfterMount = leaderboardSpy.mock.calls.length;
+    expect(callCountAfterMount).toBeGreaterThanOrEqual(1);
+
+    // Advance by 60 seconds to trigger one polling cycle
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+      await Promise.resolve();
+    });
+
+    expect(leaderboardSpy.mock.calls.length).toBeGreaterThan(callCountAfterMount);
+
+    vi.useRealTimers();
   });
 });
 

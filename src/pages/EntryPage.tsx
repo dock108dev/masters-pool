@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAnalytics } from '../hooks/useAnalytics';
 import type {
   ClubConfig,
   AvailableGolfer,
@@ -9,9 +10,10 @@ import type {
   PoolLockStatus,
 } from '../types/domain';
 import { useApi } from '../hooks/useApi';
+import { usePlayerRoster } from '../hooks/usePlayerRoster';
 import { apiClient } from '../api/client';
 import { validateEntryForm, validateSlotSelections } from '../utils/validation';
-import { fieldToGolfers, fieldToBuckets } from '../utils/fieldHelpers';
+import { fieldToGolfers, fieldToBuckets, playerToGolfer } from '../utils/fieldHelpers';
 import { GolferPicker } from '../components/entry/GolferPicker';
 import { BucketPicker } from '../components/entry/BucketPicker';
 import { LoadingState } from '../components/common/LoadingState';
@@ -23,6 +25,7 @@ interface EntryPageProps {
 
 export function EntryPage({ clubConfig }: EntryPageProps) {
   const navigate = useNavigate();
+  const { capture } = useAnalytics();
   // Negative IDs distinguish write-in "Other" golfers from real dg_ids
   const nextOtherIdRef = useRef(-1);
   const [email, setEmail] = useState('');
@@ -44,9 +47,14 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
     [clubConfig.code]
   );
 
+  // Flat pools source their player list from the tournament roster endpoint.
+  // Bucketed pools still need the pool field for bucket structure.
+  const { players: rosterPlayers, isLoading: rosterLoading, error: rosterError, refetch: refetchRoster } =
+    usePlayerRoster(!clubConfig.useBuckets ? pool?.tournament_id : undefined);
+
   const { data: field, loading: fieldLoading, error: fieldError, refetch: refetchField } =
     useApi<PoolFieldResponse>(
-      () => pool ? apiClient.getPoolField(pool.id) : Promise.resolve({ pool_id: 0, variant: '' }),
+      () => (pool && clubConfig.useBuckets) ? apiClient.getPoolField(pool.id) : Promise.resolve({ pool_id: 0, variant: '' }),
       [pool?.id ?? 0]
     );
 
@@ -58,7 +66,9 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
     [pool?.id ?? 0],
   );
 
-  const golfers: AvailableGolfer[] = field ? fieldToGolfers(field) : [];
+  const golfers: AvailableGolfer[] = clubConfig.useBuckets
+    ? (field ? fieldToGolfers(field) : [])
+    : rosterPlayers.map(playerToGolfer);
   const buckets: GolferBucket[] | null = field ? fieldToBuckets(field) : null;
 
   // Merge other players (negative IDs) so slots can display their names
@@ -152,6 +162,7 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
         picks,
       });
 
+      capture('entry_submitted', { pick_count: picks.length });
       navigate('/confirmation', { state: { confirmation: response } });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
@@ -169,21 +180,27 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
     );
   }
 
-  if (poolLoading || fieldLoading || lockStatusLoading) return <LoadingState message="Loading entry form..." />;
-  if (fieldError) return <ErrorState message={fieldError} onRetry={refetchField} />;
+  if (poolLoading || fieldLoading || lockStatusLoading || rosterLoading) return <LoadingState message="Loading entry form..." />;
+  const playerFetchError = fieldError ?? rosterError;
+  if (playerFetchError) return <ErrorState message={playerFetchError} onRetry={clubConfig.useBuckets ? refetchField : refetchRoster} />;
   if (!pool) return <ErrorState message="No active pool found." />;
 
-  if (lockStatus?.locked) {
+  const isEntryClosed =
+    pool.status === 'locked' || pool.status === 'final' || pool.status === 'archived' ||
+    lockStatus?.locked === true;
+
+  if (isEntryClosed) {
     return (
       <div className="page entry-page">
         <div className="pool-locked-banner" role="alert" data-testid="pool-locked-banner">
-          <h2>Pool is Locked</h2>
+          <h2>Entries are Closed</h2>
           <p>
             Entry submissions are closed.
-            {lockStatus.locked_at
+            {lockStatus?.locked_at
               ? ` The pool was locked on ${new Date(lockStatus.locked_at).toLocaleString()}.`
               : ''}
           </p>
+          <Link to="/leaderboard" className="btn btn-secondary">View Leaderboard</Link>
         </div>
       </div>
     );
@@ -306,7 +323,11 @@ export function EntryPage({ clubConfig }: EntryPageProps) {
           disabled={submitting}
           data-testid="submit-button"
         >
-          {submitting ? 'Submitting...' : 'Submit Entry'}
+          {submitting
+            ? 'Submitting...'
+            : selectedIds.length < clubConfig.pickCount
+              ? `${selectedIds.length} of ${clubConfig.pickCount} picks made`
+              : 'Submit Entry'}
         </button>
       </form>
 

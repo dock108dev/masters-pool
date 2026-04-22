@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react';
 import type { ClubConfig } from '../types/domain';
 import { useApi } from '../hooks/useApi';
 import { apiClient } from '../api/client';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { LeaderboardTable } from '../components/leaderboard/LeaderboardTable';
 import { LoadingState } from '../components/common/LoadingState';
-import { ErrorState } from '../components/common/ErrorState';
 
 interface LeaderboardPageProps {
   clubConfig: ClubConfig;
 }
 
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 60_000;
 const STALE_THRESHOLD_MS = 60_000;
 const STALE_CHECK_INTERVAL_MS = 10_000;
 const MAX_CONSECUTIVE_FAILURES = 3;
@@ -25,6 +25,12 @@ function formatTime(date: Date): string {
 }
 
 export function LeaderboardPage({ clubConfig }: LeaderboardPageProps) {
+  const { capture } = useAnalytics();
+
+  useEffect(() => {
+    capture('leaderboard_viewed');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const { data: pool, loading: poolLoading } = useApi(
     () => apiClient.getActivePool(clubConfig.code),
     [clubConfig.code],
@@ -33,14 +39,12 @@ export function LeaderboardPage({ clubConfig }: LeaderboardPageProps) {
   const {
     data: leaderboard,
     loading: lbLoading,
-    error,
-    refetch,
     lastUpdatedAt,
     consecutiveFailures,
   } = useApi(
     () => pool ? apiClient.getLeaderboard(pool.id) : Promise.reject(new Error('No pool')),
     [pool?.id ?? 0],
-    { pollingInterval: POLL_INTERVAL_MS },
+    { pollingInterval: pool?.status === 'live' ? POLL_INTERVAL_MS : undefined },
   );
 
   const [isStaleInternal, setIsStaleInternal] = useState(false);
@@ -67,8 +71,16 @@ export function LeaderboardPage({ clubConfig }: LeaderboardPageProps) {
     );
   }
 
-  if (!leaderboard && error) return <ErrorState message={error} onRetry={refetch} />;
-  if (!leaderboard) return <ErrorState message="Leaderboard unavailable." />;
+  if (!leaderboard) {
+    return (
+      <div className="page leaderboard-page">
+        <h1>{clubConfig.shortName} Leaderboard</h1>
+        <div className="scores-unavailable" data-testid="scores-not-available">
+          Scores not yet available — check back when the tournament begins
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page leaderboard-page">

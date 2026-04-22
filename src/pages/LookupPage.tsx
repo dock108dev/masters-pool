@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { ClubConfig, EntryLookupResult, LeaderboardStanding, PoolSummary } from '../types/domain';
 import { apiClient } from '../api/client';
 import { validateEmail } from '../utils/validation';
 import { formatScore } from '../utils/formatting';
 import { LoadingState } from '../components/common/LoadingState';
-import { EmptyState } from '../components/common/EmptyState';
 import { useApi } from '../hooks/useApi';
 
 interface LookupPageProps {
@@ -91,16 +91,11 @@ export function LookupPage({ clubConfig }: LookupPageProps) {
 
       {loading && <LoadingState message="Searching..." />}
 
-      {notFound && (
-        <EmptyState
-          title="No entries found"
-          description={`No entry found for ${email}.`}
-          data-testid="lookup-not-found"
-        />
-      )}
-
-      {searched && !notFound && result && result.entries.length === 0 && (
-        <EmptyState title="No entries found" description={`No entries found for ${email}.`} />
+      {(notFound || (searched && !notFound && result && result.entries.length === 0)) && (
+        <div className="empty-state" data-testid="no-entries">
+          <h3>No entries found</h3>
+          <p>No entries found for {email}.</p>
+        </div>
       )}
 
       {result && result.entries.length > 0 && (
@@ -118,7 +113,7 @@ export function LookupPage({ clubConfig }: LookupPageProps) {
 
             return (
               <div key={entry.entry_id} className="lookup-entry-card" data-testid={`lookup-entry-${entry.entry_id}`}>
-                <p><strong>{entry.entry_name}</strong></p>
+                <p><strong><Link to={`/leaderboard/entry/${entry.entry_id}`}>{entry.entry_name}</Link></strong></p>
                 <p className="lookup-entry-meta">
                   Rank: <span data-testid="lookup-rank">{rankDisplay}</span>
                   {' · '}

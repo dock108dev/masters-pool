@@ -1,6 +1,6 @@
 # API Contracts
 
-Typed contracts between the masters-pool-web frontend and the sports-data-admin backend Golf Pools API. All types are defined in `src/types/domain.ts`. All endpoints are defined in `src/api/types.ts`.
+Typed contracts between the club-golf-tools frontend and the sports-data-admin backend Golf Pools API. All domain types are defined in `src/types/domain.ts`. The `ApiClient` interface (36 methods) and `API_ENDPOINTS` map are in `src/api/types.ts`.
 
 ## Authentication
 
@@ -363,6 +363,83 @@ Requires coordinator authentication.
 
 ---
 
+### Lock Pool
+
+```
+POST /api/golf/pools/{poolId}/lock
+```
+
+Requires coordinator authentication. Transitions pool from `open` → `locked`. Rejects further entry submissions.
+
+**Response:** `PoolSummary` (updated)
+
+---
+
+### Unlock Pool
+
+```
+POST /api/golf/pools/{poolId}/unlock
+```
+
+Requires coordinator authentication. Transitions pool from `locked` → `open`.
+
+**Response:** `PoolSummary` (updated)
+
+---
+
+### Send Pool Invites
+
+```
+POST /api/golf/pools/{poolId}/invites
+```
+
+Requires coordinator authentication. Sends invitation emails to the specified addresses.
+
+**Request:**
+```typescript
+interface SendInvitesRequest {
+  emails: string[];
+}
+```
+
+**Response:** `void` (204)
+
+---
+
+### Get Entry
+
+```
+GET /api/golf/entries/{entryId}
+```
+
+Returns a single pool entry. Throws 404 if not found.
+
+**Response:** `PoolEntry`
+
+---
+
+### Get Entry Leaderboard
+
+```
+GET /api/golf/entries/{entryId}/leaderboard
+```
+
+Returns scoring detail for a single entry. Returns `null` when scoring has not run yet.
+
+**Response:** `EntryLeaderboardResponse | null`
+
+```typescript
+interface EntryLeaderboardResponse {
+  entry_id: number;
+  entry_name: string;
+  picks: LeaderboardPick[];
+  aggregate_score: number | null;
+  qualification_status: QualificationStatus;
+}
+```
+
+---
+
 ## Club Endpoints
 
 ### Get Club Pools
@@ -479,6 +556,72 @@ interface ReferralCreditResponse {
 
 ---
 
+### Check Slug Availability
+
+```
+GET /api/clubs/slug-check?slug={slug}
+```
+
+Real-time availability check for a proposed club slug. Used by `SlugAvailabilityInput` during onboarding (debounced, supports `AbortSignal`).
+
+**Response:**
+```typescript
+interface SlugCheckResponse {
+  available: boolean;
+  reason: string | null;   // Human-readable reason when unavailable
+}
+```
+
+---
+
+### Create Club
+
+```
+POST /api/clubs
+```
+
+Creates a new club after a successful Stripe checkout. Called from `CheckoutSuccessPage` once the session is verified.
+
+**Request:**
+```typescript
+interface CreateClubRequest {
+  session_id: string;   // Stripe checkout session ID
+  club_name: string;
+  slug: string;
+}
+```
+
+**Response:**
+```typescript
+interface CreateClubResponse {
+  club_slug: string;
+  onboard_url: string;  // Relative URL for the onboarding wizard
+}
+```
+
+---
+
+### Get Pending Club
+
+```
+GET /api/clubs/pending
+```
+
+Returns the in-progress onboarding club for the authenticated coordinator. Returns `null` (404) when no pending club exists.
+
+**Response:** `PendingClub | null`
+
+```typescript
+interface PendingClub {
+  club_slug: string;
+  club_name: string;
+  onboard_step: number;
+  payment_session_id: string;
+}
+```
+
+---
+
 ## Tournament Endpoints
 
 ### Get Tournaments
@@ -498,6 +641,47 @@ interface TournamentOption {
   year: number;
   cut_rule_type: CutRuleType;        // "masters" | "pga_championship" | "us_open" | "the_open"
   default_format: 'flat' | 'bucketed';
+}
+```
+
+---
+
+### Get Tournament Player Roster
+
+```
+GET /api/golf/tournaments/{tournamentId}/roster
+```
+
+Returns the full player field for a tournament. Used by the superadmin dashboard and onboarding wizard.
+
+**Response:** `Player[]`
+
+```typescript
+interface Player {
+  id: number;           // DataGolf player ID
+  name: string;
+  worldRank: number;
+  tier: 'elite' | 'strong' | 'mid' | 'longshot';
+}
+```
+
+---
+
+### Get Live Tournament Leaderboard
+
+```
+GET /api/golf/tournaments/{tournamentId}/leaderboard
+```
+
+Returns the current in-progress tournament leaderboard (raw scores, not pool standings). Used by the superadmin dashboard.
+
+**Response:** `PlayerScore[]`
+
+```typescript
+interface PlayerScore extends Player {
+  totalStrokes: number;
+  thru: number;
+  status: 'active' | 'cut' | 'wd';
 }
 ```
 
@@ -547,6 +731,105 @@ interface TournamentPollHealth {
   last_polled_at: string | null;   // null if never polled
   is_in_window: boolean;           // True if within active tournament window
   is_stale: boolean;               // True when in_window AND gap > 30 min since last poll
+}
+```
+
+---
+
+## Onboarding & Checkout Endpoints
+
+### Submit Club Claim
+
+```
+POST /api/onboarding/club-claims
+```
+
+Lead capture for prospective clubs. Rate-limited (429 with `Retry-After` header).
+
+**Request:**
+```typescript
+interface ClubClaim {
+  club_name: string;
+  contact_email: string;
+  expected_entries?: number;
+  notes?: string;
+}
+```
+
+**Response:**
+```typescript
+interface ClubClaimResponse {
+  claim_id: string;
+  received_at: string;   // ISO 8601
+}
+```
+
+---
+
+### Create Checkout Session
+
+```
+POST /api/checkout/session
+```
+
+Creates a Stripe Checkout session for the self-serve onboarding flow.
+
+**Response:** `{ session_url: string }`
+
+Redirect the browser to `session_url` to start the Stripe-hosted checkout.
+
+---
+
+### Verify Checkout Session
+
+```
+POST /api/checkout/verify
+```
+
+Polls or confirms a Stripe session after the user returns from checkout.
+
+**Request:** `{ session_id: string }`
+
+**Response:**
+```typescript
+interface VerifySessionResponse {
+  status: 'pending' | 'provisioned';
+  club_name: string | null;
+  email: string | null;
+  club_slug: string | null;
+  onboard_url: string | null;   // Relative URL; present when status is 'provisioned'
+}
+```
+
+---
+
+### Submit Onboarding Wizard
+
+```
+POST /api/clubs/wizard/submit
+```
+
+Finalizes club onboarding — creates the first pool and returns entry link. Requires Clerk authentication.
+
+**Request:**
+```typescript
+interface OnboardingWizardSubmitRequest {
+  club_slug: string;
+  pool_name: string;
+  tournament_id: number;
+  entry_deadline: string;           // ISO 8601
+  max_entries_per_email: number;
+  rules_json: CreatePoolRequest['rules_json'];
+}
+```
+
+**Response:**
+```typescript
+interface OnboardingWizardSubmitResponse {
+  pool_id: number;
+  redirect_url: string;
+  pool_token: string;
+  entry_url: string;   // Shareable public entry URL
 }
 ```
 

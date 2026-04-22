@@ -1,7 +1,7 @@
 import type { BucketDefinition } from '../types/domain';
 
 // Shape of wizard form state accessible to engine config components.
-// PoolWizardPage.WizardState extends this with step-1 fields.
+// WizardState in poolWizardUtils extends this with step-1 fields (tournament, name, deadline).
 export interface WizardFormState {
   engine_type: string;
   // Golf-specific
@@ -53,7 +53,7 @@ registerWizardEngine({
   id: 'golf',
   displayName: 'Golf Pool',
   description: 'Pick golfers; score is the sum of your best N finishes.',
-  hasStep3: true,
+  hasStep3: false,
   defaultState: {
     format: null,
     buckets: [],
@@ -65,22 +65,33 @@ registerWizardEngine({
   },
   validateStep2(state) {
     const errs: string[] = [];
-    if (!state.format) errs.push('Select a format.');
-    if (state.format === 'bucketed' && state.buckets.length === 0) {
-      errs.push('Bucketed format requires at least one bucket definition.');
+    if (!state.format) {
+      errs.push('Select a format.');
+      return errs;
+    }
+    if (state.format === 'flat') {
+      if (state.pick_count < 1) errs.push('Pick count (N) must be at least 1.');
+      if (state.count_best < 1 || state.count_best > state.pick_count) {
+        errs.push('Best count (M) must be between 1 and pick count (N).');
+      }
+      if (state.min_cuts_to_qualify < 1 || state.min_cuts_to_qualify > state.pick_count) {
+        errs.push('Min cuts to qualify must be between 1 and pick count.');
+      }
+    }
+    if (state.format === 'bucketed') {
+      if (state.buckets.length === 0) errs.push('Add at least one group.');
+      const emptyLabel = state.buckets.some((b) => !b.label.trim());
+      if (emptyLabel) errs.push('Each group must have a non-empty name.');
+      const labels = state.buckets.map((b) => b.label.trim().toLowerCase());
+      if (labels.length !== new Set(labels).size) errs.push('Group names must be unique.');
+      if (state.count_best < 1 || state.count_best > state.buckets.length) {
+        errs.push('Best count (M) must be between 1 and the number of groups.');
+      }
     }
     return errs;
   },
-  validateStep3(state) {
-    const errs: string[] = [];
-    if (state.pick_count < 1) errs.push('Pick count must be at least 1.');
-    if (state.count_best < 1 || state.count_best > state.pick_count) {
-      errs.push('Count best must be between 1 and pick count.');
-    }
-    if (state.min_cuts_to_qualify < 1 || state.min_cuts_to_qualify > state.pick_count) {
-      errs.push('Min cuts to qualify must be between 1 and pick count.');
-    }
-    return errs;
+  validateStep3(_state) {
+    return [];
   },
   ConfigFields({ state, onChange, errors }) {
     function handleFormatChange(format: 'flat' | 'bucketed') {
@@ -125,8 +136,9 @@ registerWizardEngine({
               value="flat"
               checked={state.format === 'flat'}
               onChange={() => handleFormatChange('flat')}
+              data-testid="wizard-format-flat"
             />
-            Flat picks (RVCC style — pick any 7 golfers)
+            Pick any N, best M count
           </label>
           <label>
             <input
@@ -135,19 +147,58 @@ registerWizardEngine({
               value="bucketed"
               checked={state.format === 'bucketed'}
               onChange={() => handleFormatChange('bucketed')}
+              data-testid="wizard-format-bucketed"
             />
-            Bucketed picks (Crestmont style — pick one from each group)
+            Pick one from each group, best M count
           </label>
         </fieldset>
 
+        {state.format === 'flat' && (
+          <div data-testid="flat-config">
+            <label>
+              Total picks per entry (N)
+              <input
+                type="number"
+                min={1}
+                data-testid="wizard-pick-count"
+                value={state.pick_count}
+                onChange={(e) => onChange({ pick_count: Number(e.target.value) })}
+              />
+            </label>
+            <label>
+              Best scores counted (M)
+              <input
+                type="number"
+                min={1}
+                data-testid="wizard-count-best"
+                value={state.count_best}
+                onChange={(e) => onChange({ count_best: Number(e.target.value) })}
+              />
+            </label>
+            <label>
+              Min golfers to make cut
+              <input
+                type="number"
+                min={1}
+                data-testid="wizard-min-cuts"
+                value={state.min_cuts_to_qualify}
+                onChange={(e) => onChange({ min_cuts_to_qualify: Number(e.target.value) })}
+              />
+            </label>
+            <p data-testid="scoring-summary" className="wizard-scoring-summary">
+              Each entry picks {state.pick_count} golfers; best {state.count_best} scores count.
+            </p>
+          </div>
+        )}
+
         {state.format === 'bucketed' && (
           <div data-testid="bucket-definitions">
-            <h3>Bucket Definitions</h3>
+            <h3>Group Definitions</h3>
             {state.buckets.map((bucket, idx) => (
               <div key={idx} className="bucket-row" data-testid={`bucket-row-${idx}`}>
                 <input
                   type="text"
-                  aria-label={`Bucket ${idx + 1} label`}
+                  aria-label={`Group ${idx + 1} name`}
                   value={bucket.label}
                   onChange={(e) => updateBucket(idx, { label: e.target.value })}
                 />
@@ -156,7 +207,7 @@ registerWizardEngine({
                   <input
                     type="number"
                     min={1}
-                    aria-label={`Bucket ${idx + 1} min picks`}
+                    aria-label={`Group ${idx + 1} min picks`}
                     value={bucket.min_picks}
                     onChange={(e) => updateBucket(idx, { min_picks: Number(e.target.value) })}
                   />
@@ -166,7 +217,7 @@ registerWizardEngine({
                   <input
                     type="number"
                     min={1}
-                    aria-label={`Bucket ${idx + 1} max picks`}
+                    aria-label={`Group ${idx + 1} max picks`}
                     value={bucket.max_picks}
                     onChange={(e) => updateBucket(idx, { max_picks: Number(e.target.value) })}
                   />
@@ -174,54 +225,34 @@ registerWizardEngine({
                 <button
                   type="button"
                   onClick={() => removeBucket(idx)}
-                  aria-label={`Remove bucket ${idx + 1}`}
+                  aria-label={`Remove group ${idx + 1}`}
                 >
                   Remove
                 </button>
               </div>
             ))}
-            <button type="button" onClick={addBucket}>Add Bucket</button>
+            <button type="button" onClick={addBucket} data-testid="add-group-btn">Add Group</button>
+            <label>
+              Best groups counted (M)
+              <input
+                type="number"
+                min={1}
+                data-testid="wizard-count-best-bucketed"
+                value={state.count_best}
+                onChange={(e) => onChange({ count_best: Number(e.target.value) })}
+              />
+            </label>
+            <p data-testid="scoring-summary" className="wizard-scoring-summary">
+              Each entry picks one from each of {state.buckets.length} group
+              {state.buckets.length !== 1 ? 's' : ''}; best {state.count_best} count.
+            </p>
           </div>
         )}
       </>
     );
   },
-  Step3Fields({ state, onChange, errors }) {
-    return (
-      <div data-testid="wizard-step-3">
-        <h2>Step 3 — Pick Counts</h2>
-        {errors.map((e) => (
-          <p key={e} className="wizard-error" role="alert">{e}</p>
-        ))}
-        <label>
-          Total picks per entry
-          <input
-            type="number"
-            min={1}
-            value={state.pick_count}
-            onChange={(e) => onChange({ pick_count: Number(e.target.value) })}
-          />
-        </label>
-        <label>
-          Best N scores counted
-          <input
-            type="number"
-            min={1}
-            value={state.count_best}
-            onChange={(e) => onChange({ count_best: Number(e.target.value) })}
-          />
-        </label>
-        <label>
-          Min golfers to make cut (to qualify)
-          <input
-            type="number"
-            min={1}
-            value={state.min_cuts_to_qualify}
-            onChange={(e) => onChange({ min_cuts_to_qualify: Number(e.target.value) })}
-          />
-        </label>
-      </div>
-    );
+  Step3Fields(_props) {
+    return null;
   },
 });
 

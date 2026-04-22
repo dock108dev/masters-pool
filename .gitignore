@@ -27,3 +27,4 @@ dist-ssr
 
 # AIDLC working directory
 .aidlc/*
+docs/archived/

@@ -8,6 +8,42 @@ export interface WizardState extends WizardFormState {
   max_entries_per_email: number;
 }
 
+export const ONBOARDING_WIZARD_KEY = 'onboarding-wizard-v1';
+
+export interface OnboardingWizardState extends WizardState {
+  step: number;
+  club_name: string;
+  club_slug: string;
+  time_zone: string;
+  lock_timing_source: 'auto' | 'manual';
+  entry_fee_enabled: boolean;
+  entry_fee_amount: number;
+  entry_fee_currency: string;
+}
+
+export const DEFAULT_ONBOARDING_WIZARD_STATE: OnboardingWizardState = {
+  step: 0,
+  club_name: '',
+  club_slug: '',
+  time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  tournament_id: null,
+  pool_name: '',
+  entry_deadline: '',
+  max_entries_per_email: 1,
+  engine_type: 'golf',
+  format: null,
+  buckets: [],
+  pick_count: 7,
+  count_best: 5,
+  min_cuts_to_qualify: 5,
+  bracket_rounds: 4,
+  bracket_points_per_round: [1, 2, 4, 8],
+  lock_timing_source: 'auto',
+  entry_fee_enabled: false,
+  entry_fee_amount: 0,
+  entry_fee_currency: 'USD',
+};
+
 export function buildCreatePoolRequest(s: WizardState, clubCode: string): CreatePoolRequest {
   if (s.engine_type === 'bracket') {
     return {

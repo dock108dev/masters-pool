@@ -36,10 +36,7 @@ export function validateRvccPicks(
   if (selectedDgIds.length !== config.pickCount) {
     errors.push(`You must select exactly ${config.pickCount} golfers. Currently selected: ${selectedDgIds.length}.`);
   }
-  const unique = new Set(selectedDgIds);
-  if (unique.size !== selectedDgIds.length) {
-    errors.push('Duplicate golfer selections are not allowed.');
-  }
+  pushIfDuplicates(selectedDgIds, errors);
   return { valid: errors.length === 0, errors };
 }
 
@@ -51,6 +48,12 @@ function buildGolferBucketMap(buckets: GolferBucket[]): Map<number, number> {
     }
   }
   return map;
+}
+
+function pushIfDuplicates(selectedDgIds: number[], errors: string[]): void {
+  if (new Set(selectedDgIds).size !== selectedDgIds.length) {
+    errors.push('Duplicate golfer selections are not allowed.');
+  }
 }
 
 export function validateCrestmontPicks(
@@ -79,10 +82,7 @@ export function validateCrestmontPicks(
     }
   }
 
-  const unique = new Set(selectedDgIds);
-  if (unique.size !== selectedDgIds.length) {
-    errors.push('Duplicate golfer selections are not allowed.');
-  }
+  pushIfDuplicates(selectedDgIds, errors);
 
   return { valid: errors.length === 0, errors };
 }

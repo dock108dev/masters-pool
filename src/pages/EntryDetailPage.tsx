@@ -1,10 +1,9 @@
 import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import type { ClubConfig, GolferStatus, LeaderboardPick, PoolSummary } from '../types/domain';
+import type { ClubConfig, GolferStatus, PoolSummary } from '../types/domain';
 import { useApi } from '../hooks/useApi';
 import { apiClient } from '../api/client';
 import { LoadingState } from '../components/common/LoadingState';
-import { ErrorState } from '../components/common/ErrorState';
 import { formatScore, formatLastUpdated } from '../utils/formatting';
 
 interface EntryDetailPageProps {
@@ -42,8 +41,89 @@ function buildScoreFormula(pool: PoolSummary): string {
   return base;
 }
 
-function sortPicks(picks: LeaderboardPick[]): LeaderboardPick[] {
-  return [...picks].sort((a, b) => {
+function roundScore(val: number | null): string {
+  return val != null ? formatScore(val) : '-';
+}
+
+function NotFoundError({ entryId }: { entryId: string | undefined }) {
+  return (
+    <div className="page entry-detail-page">
+      <div className="error-state" role="alert">
+        <p className="error-message" data-testid="entry-not-found">
+          Entry #{entryId ?? 'unknown'} not found.
+        </p>
+        <Link to="/lookup" className="btn btn-secondary" data-testid="lookup-link">
+          Search for your entry
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export function EntryDetailPage({ clubConfig }: EntryDetailPageProps) {
+  const { entryId } = useParams<{ entryId: string }>();
+  const entryIdNum = entryId != null ? parseInt(entryId, 10) : NaN;
+  const isValidId = !Number.isNaN(entryIdNum);
+
+  const { data: entry, loading: entryLoading, error: entryError } = useApi(
+    () =>
+      isValidId
+        ? apiClient.getEntry(entryIdNum)
+        : Promise.reject(Object.assign(new Error('invalid'), { status: 404 })),
+    [entryIdNum, isValidId],
+  );
+
+  const { data: entryLeaderboard, loading: lbLoading } = useApi(
+    () =>
+      isValidId
+        ? apiClient.getEntryLeaderboard(entryIdNum)
+        : Promise.resolve(null),
+    [entryIdNum, isValidId],
+  );
+
+  const { data: pool } = useApi(
+    () => apiClient.getActivePool(clubConfig.code),
+    [clubConfig.code],
+  );
+
+  if (entryLoading || (lbLoading && !entryLeaderboard && entryLeaderboard !== null)) {
+    return <LoadingState message="Loading entry detail..." />;
+  }
+
+  if (entryError !== null || entry === null) {
+    return <NotFoundError entryId={entryId} />;
+  }
+
+  // Pre-tournament: entry found but no scoring data yet
+  if (entryLeaderboard === null) {
+    const sortedPicks = [...entry.picks].sort((a, b) => a.pick_slot - b.pick_slot);
+    return (
+      <div className="page entry-detail-page">
+        <Link to="/leaderboard" className="entry-detail-back">
+          ← Back to Leaderboard
+        </Link>
+        <h1 className="entry-detail-title">{entry.entry_name}</h1>
+        <div className="pre-tournament-banner" data-testid="pre-tournament-banner">
+          Tournament not started
+        </div>
+        <section className="entry-detail-picks">
+          <h2>Picks</h2>
+          <ul className="entry-picks-list" data-testid="entry-picks-list">
+            {sortedPicks.map((pick) => (
+              <li key={pick.pick_slot} data-testid={`entry-pick-slot-${pick.pick_slot}`}>
+                {pick.player_name}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    );
+  }
+
+  const { standing, last_scored_at } = entryLeaderboard;
+  const rankDisplay =
+    standing.rank != null ? `${standing.is_tied ? 'T' : ''}${standing.rank}` : '-';
+  const sortedPicks = [...standing.picks].sort((a, b) => {
     if (a.counts_toward_total !== b.counts_toward_total) {
       return a.counts_toward_total ? -1 : 1;
     }
@@ -55,44 +135,6 @@ function sortPicks(picks: LeaderboardPick[]): LeaderboardPick[] {
     if (aScore !== bScore) return aScore - bScore;
     return a.player_name.localeCompare(b.player_name);
   });
-}
-
-function roundScore(val: number | null): string {
-  return val != null ? formatScore(val) : '-';
-}
-
-export function EntryDetailPage({ clubConfig }: EntryDetailPageProps) {
-  const { entryId } = useParams<{ entryId: string }>();
-
-  const { data: pool, loading: poolLoading } = useApi(
-    () => apiClient.getActivePool(clubConfig.code),
-    [clubConfig.code],
-  );
-
-  const { data: leaderboard, loading: lbLoading } = useApi(
-    () => (pool ? apiClient.getLeaderboard(pool.id) : Promise.reject(new Error('No pool'))),
-    [pool?.id ?? 0],
-  );
-
-  if (poolLoading || (lbLoading && !leaderboard)) {
-    return <LoadingState message="Loading entry detail..." />;
-  }
-
-  if (!leaderboard || !pool) {
-    return <ErrorState message="Entry data unavailable." />;
-  }
-
-  const entryIdNum = entryId != null ? parseInt(entryId, 10) : NaN;
-  const standing = Number.isNaN(entryIdNum)
-    ? undefined
-    : leaderboard.standings.find((s) => s.entry_id === entryIdNum);
-
-  if (!standing) {
-    return <ErrorState message={`Entry #${entryId ?? 'unknown'} not found.`} />;
-  }
-
-  const rankDisplay =
-    standing.rank != null ? `${standing.is_tied ? 'T' : ''}${standing.rank}` : '-';
 
   return (
     <div className="page entry-detail-page">
@@ -123,7 +165,7 @@ export function EntryDetailPage({ clubConfig }: EntryDetailPageProps) {
             </tr>
           </thead>
           <tbody>
-            {sortPicks(standing.picks).map((pick) => (
+            {sortedPicks.map((pick) => (
               <tr
                 key={pick.dg_id}
                 className={pick.counts_toward_total ? 'pick-counted' : 'pick-not-counted'}
@@ -145,18 +187,20 @@ export function EntryDetailPage({ clubConfig }: EntryDetailPageProps) {
         </table>
       </section>
 
-      <section className="entry-detail-scoring">
-        <h2>Score Breakdown</h2>
-        <p className="scoring-formula" data-testid="scoring-formula">
-          {buildScoreFormula(pool)}
-        </p>
-        <p className="scoring-aggregate">
-          Aggregate score: <strong>{formatScore(standing.aggregate_score)}</strong>
-        </p>
-      </section>
+      {pool && (
+        <section className="entry-detail-scoring">
+          <h2>Score Breakdown</h2>
+          <p className="scoring-formula" data-testid="scoring-formula">
+            {buildScoreFormula(pool)}
+          </p>
+          <p className="scoring-aggregate">
+            Aggregate score: <strong>{formatScore(standing.aggregate_score)}</strong>
+          </p>
+        </section>
+      )}
 
       <div className="entry-detail-updated" data-testid="entry-detail-updated">
-        Last updated: {formatLastUpdated(leaderboard.last_scored_at)}
+        Last updated: {formatLastUpdated(last_scored_at)}
       </div>
     </div>
   );

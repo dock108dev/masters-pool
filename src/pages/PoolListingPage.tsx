@@ -61,7 +61,7 @@ export function PoolListingPage({ clubConfig }: PoolListingPageProps) {
       </div>
 
       {pools && pools.length === 0 ? (
-        <div data-testid="empty-pools">
+        <div data-testid="no-pools">
           <EmptyState
             title="No pools yet"
             description="Create your first pool to get started."

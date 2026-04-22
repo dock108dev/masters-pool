@@ -1,72 +1,48 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import type { ClubClaim } from '../../types/domain';
 
-interface PricingTier {
-  name: string;
-  price: string;
-  description: string;
-  features: string[];
-  cta: string;
-  ctaPath: string;
-  highlight: boolean;
-}
-
-const PRICING_TIERS: PricingTier[] = [
-  {
-    name: 'Single Pool',
-    price: '$199 / pool',
-    description: 'Run one major pool end-to-end.',
-    features: [
-      'One pool, any major',
-      'Unlimited entries',
-      'Live leaderboard',
-      'Email notifications',
-      'CSV export',
-    ],
-    cta: 'Claim Your Club',
-    ctaPath: '#claim',
-    highlight: false,
-  },
-  {
-    name: 'Year of Weekly Pools',
-    price: '$499 / year',
-    description: 'A season of weekly pools — PGA Tour every week, all four majors, your choice.',
-    features: [
-      'Unlimited pools for 12 months',
-      'Weekly PGA Tour support',
-      'All formats (flat + bucketed)',
-      'Custom branding',
-      'CSV export',
-      'Priority support',
-    ],
-    cta: 'Claim Your Club',
-    ctaPath: '#claim',
-    highlight: true,
-  },
-];
-
-interface FormatDemo {
+interface Feature {
   title: string;
   description: string;
-  example: string[];
 }
 
-const FORMAT_DEMOS: FormatDemo[] = [
+const FEATURES: Feature[] = [
   {
-    title: 'Flat Pick',
+    title: 'Live Scoring',
     description:
-      'Members choose any N golfers from the field. Best scoring picks count toward the total.',
-    example: ['Pick 7 golfers', 'Best 5 scores count', 'Lowest aggregate wins'],
+      'Leaderboard updates in real-time as tournament rounds progress — ' +
+      'no manual refresh required.',
   },
   {
-    title: 'Bucketed Pick',
+    title: 'Self-Serve Setup',
     description:
-      'Members pick one golfer from each tier group, ensuring variety across the field.',
-    example: ['1 pick from each tier', 'All picks scored', 'Lowest aggregate wins'],
+      'Configure your pool and share an entry link in under ten minutes, ' +
+      'no spreadsheets.',
+  },
+  {
+    title: 'Custom Branding',
+    description:
+      "Your club's name and colors on every page your members see.",
   },
 ];
+
+const PLAN = {
+  name: 'Club Annual',
+  price: '$299 / year',
+  description:
+    'Unlimited pools for your club all year — every major, every week.',
+  features: [
+    'Unlimited pools for 12 months',
+    'Live leaderboard',
+    'Flat pick and bucketed pick formats',
+    'Custom branding',
+    'CSV export',
+    'Priority support',
+  ],
+};
 
 export function OnboardHomePage() {
   const [clubName, setClubName] = useState('');
@@ -91,7 +67,9 @@ export function OnboardHomePage() {
       await apiClient.submitClubClaim(claim);
       setSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit claim. Please try again.');
+      setError(
+        err instanceof Error ? err.message : 'Failed to submit. Please try again.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -100,39 +78,40 @@ export function OnboardHomePage() {
   return (
     <div className="marketing-page" data-testid="onboard-home-page">
       <header className="marketing-header">
-        <div className="marketing-logo">Club Golf Tools</div>
+        <div className="marketing-logo">Country Club Picks</div>
         <nav className="marketing-nav">
-          <a href="#claim" className="btn btn-primary marketing-cta-nav">Claim Your Club</a>
+          <Link to="/checkout" className="btn btn-primary marketing-cta-nav">
+            Get Started
+          </Link>
         </nav>
       </header>
 
       <section className="marketing-hero" data-testid="marketing-hero">
         <h1>Run your club's golf pool — no spreadsheets</h1>
         <p className="marketing-hero-sub">
-          Set up a Masters, PGA Championship, or any major pool in minutes. Share a link, collect
-          entries, and follow the leaderboard live.
+          Set up a Masters, PGA Championship, or any major pool in minutes.
+          Share a link, collect entries, and follow the leaderboard live.
         </p>
-        <a href="#claim" className="btn btn-primary marketing-start-free" data-testid="start-free-btn">
-          Claim Your Club
-        </a>
+        <Link
+          to="/checkout"
+          className="btn btn-primary marketing-start-free"
+          data-testid="get-started-btn"
+        >
+          Get Started
+        </Link>
       </section>
 
-      <section className="marketing-formats" data-testid="marketing-formats">
-        <h2>Formats your club will love</h2>
+      <section className="marketing-features" data-testid="marketing-features">
+        <h2>Everything your coordinator needs</h2>
         <div className="format-demos">
-          {FORMAT_DEMOS.map((demo) => (
+          {FEATURES.map((feature) => (
             <div
-              key={demo.title}
+              key={feature.title}
               className="format-demo-card"
-              data-testid={`format-demo-${demo.title.toLowerCase().replace(' ', '-')}`}
+              data-testid={`feature-${feature.title.toLowerCase().replace(' ', '-')}`}
             >
-              <h3>{demo.title}</h3>
-              <p>{demo.description}</p>
-              <ul>
-                {demo.example.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
             </div>
           ))}
         </div>
@@ -141,45 +120,55 @@ export function OnboardHomePage() {
       <section className="marketing-pricing" data-testid="marketing-pricing">
         <h2>Simple, transparent pricing</h2>
         <div className="pricing-tiers">
-          {PRICING_TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              className={`pricing-card ${tier.highlight ? 'pricing-card--highlight' : ''}`}
-              data-testid={`pricing-tier-${tier.name.toLowerCase()}`}
-            >
-              <h3>{tier.name}</h3>
-              <div className="pricing-price">{tier.price}</div>
-              <p>{tier.description}</p>
-              <ul className="pricing-features">
-                {tier.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <a href={tier.ctaPath} className="btn btn-primary pricing-cta">
-                {tier.cta}
-              </a>
+          <div
+            className="pricing-card pricing-card--highlight"
+            data-testid="pricing-tier"
+          >
+            <h3>{PLAN.name}</h3>
+            <div className="pricing-price" data-testid="pricing-price">
+              {PLAN.price}
             </div>
-          ))}
+            <p>{PLAN.description}</p>
+            <ul className="pricing-features">
+              {PLAN.features.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+            <Link
+              to="/checkout"
+              className="btn btn-primary pricing-cta"
+              data-testid="pricing-cta"
+            >
+              Get Started
+            </Link>
+          </div>
         </div>
       </section>
 
       <section className="marketing-claim" id="claim" data-testid="claim-section">
-        <h2>Claim your club</h2>
+        <h2>Talk to us first</h2>
         <p className="claim-intro">
-          Tell us about your club. We'll get you set up with a dedicated subdomain and coordinator
-          account.
+          Tell us about your club. We'll get you set up with a dedicated
+          subdomain and coordinator account.
         </p>
 
         {submitted ? (
           <div className="claim-success" role="status" data-testid="claim-success">
             <h3>Thanks — we got it.</h3>
             <p>
-              We'll reach out within a business day. In the meantime, take a tour of a live demo:{' '}
-              <a href="https://rvcc.countryclubpicks.com">rvcc.countryclubpicks.com</a>.
+              We'll reach out within a business day. In the meantime, take a
+              tour of a live demo:{' '}
+              <a href="https://rvcc.countryclubpicks.com">
+                rvcc.countryclubpicks.com
+              </a>.
             </p>
           </div>
         ) : (
-          <form onSubmit={handleClaimSubmit} className="claim-form" data-testid="claim-form">
+          <form
+            onSubmit={handleClaimSubmit}
+            className="claim-form"
+            data-testid="claim-form"
+          >
             <div className="form-group">
               <label htmlFor="claim-club-name">Club name</label>
               <input
@@ -203,7 +192,9 @@ export function OnboardHomePage() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="claim-expected-entries">Expected number of entries</label>
+              <label htmlFor="claim-expected-entries">
+                Expected number of entries
+              </label>
               <input
                 id="claim-expected-entries"
                 type="number"
@@ -224,7 +215,11 @@ export function OnboardHomePage() {
               />
             </div>
             {error && (
-              <p className="validation-error" role="alert" data-testid="claim-error">
+              <p
+                className="validation-error"
+                role="alert"
+                data-testid="claim-error"
+              >
                 {error}
               </p>
             )}
@@ -241,7 +236,7 @@ export function OnboardHomePage() {
       </section>
 
       <footer className="marketing-footer">
-        <p>Club Golf Tools &copy; {new Date().getFullYear()}</p>
+        <p>Country Club Picks &copy; {new Date().getFullYear()}</p>
       </footer>
     </div>
   );

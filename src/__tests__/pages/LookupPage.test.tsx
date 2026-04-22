@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import type { EntryLookupResult } from '../../types/domain';
 import { MockApiClient } from '../../api/mock/adapters';
 import { LookupPage } from '../../pages/LookupPage';
 import { getClubConfig } from '../../config/clubs';
@@ -118,7 +119,7 @@ describe('LookupPage', () => {
     await user.type(screen.getByTestId('lookup-email-input'), 'notfound@example.com');
     await user.click(screen.getByTestId('lookup-button'));
     await waitFor(() => {
-      expect(screen.getByText(/No entry found for notfound@example\.com/i)).toBeInTheDocument();
+      expect(screen.getByTestId('no-entries')).toBeInTheDocument();
     });
     expect(screen.queryByTestId('lookup-results')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -140,5 +141,71 @@ describe('LookupPage', () => {
     for (let i = 1; i < slots.length; i++) {
       expect(slots[i]).toBeGreaterThan(slots[i - 1]);
     }
+  });
+
+  it('shows loading state while lookup is in progress', async () => {
+    const user = userEvent.setup();
+    let resolveLookup!: (value: EntryLookupResult) => void;
+    const pending = new Promise<EntryLookupResult>((res) => { resolveLookup = res; });
+    vi.spyOn(apiClientModule.apiClient, 'lookupEntries').mockReturnValueOnce(pending);
+
+    renderLookupPage();
+    await user.type(screen.getByTestId('lookup-email-input'), 'test@example.com');
+    await user.click(screen.getByTestId('lookup-button'));
+
+    expect(screen.getByTestId('lookup-button')).toBeDisabled();
+    expect(screen.getByTestId('lookup-button')).toHaveTextContent('Searching...');
+
+    resolveLookup({ email: 'test@example.com', entries: [] });
+    await waitFor(() => expect(screen.getByTestId('lookup-button')).not.toBeDisabled());
+  });
+
+  it('renders data-testid="no-entries" when API returns empty array', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(apiClientModule.apiClient, 'lookupEntries').mockResolvedValueOnce({
+      email: 'empty@example.com',
+      entries: [],
+    });
+    renderLookupPage();
+    await user.type(screen.getByTestId('lookup-email-input'), 'empty@example.com');
+    await user.click(screen.getByTestId('lookup-button'));
+    expect(await screen.findByTestId('no-entries')).toBeInTheDocument();
+    expect(screen.queryByTestId('lookup-results')).not.toBeInTheDocument();
+  });
+
+  it('renders data-testid="no-entries" on 404 response', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(apiClientModule.apiClient, 'lookupEntries').mockRejectedValueOnce(
+      Object.assign(new Error('Not found'), { status: 404 })
+    );
+    renderLookupPage();
+    await user.type(screen.getByTestId('lookup-email-input'), 'gone@example.com');
+    await user.click(screen.getByTestId('lookup-button'));
+    expect(await screen.findByTestId('no-entries')).toBeInTheDocument();
+  });
+
+  it('renders inline error message on network failure', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(apiClientModule.apiClient, 'lookupEntries').mockRejectedValueOnce(
+      new Error('Network error')
+    );
+    renderLookupPage();
+    await user.type(screen.getByTestId('lookup-email-input'), 'test@example.com');
+    await user.click(screen.getByTestId('lookup-button'));
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Network error/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('lookup-results')).not.toBeInTheDocument();
+  });
+
+  it('entry card links to /leaderboard/entry/:entryId', async () => {
+    const user = userEvent.setup();
+    renderLookupPage();
+    await user.type(screen.getByTestId('lookup-email-input'), 'test@example.com');
+    await user.click(screen.getByTestId('lookup-button'));
+    await screen.findByTestId('lookup-results');
+    const link = screen.getByRole('link', { name: /Mock Entry/i });
+    expect(link).toHaveAttribute('href', '/leaderboard/entry/9001');
   });
 });

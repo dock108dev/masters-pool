@@ -88,50 +88,49 @@ describe('PoolWizardPage', () => {
   });
 
   // ── Required AC test 1 ────────────────────────────────────────────────────
-  it('blocks progression from step 2 to step 3 when bucket definitions are empty', async () => {
+  it('blocks progression from step 2 when bucketed format has no groups', async () => {
     renderWizard();
     await waitFor(() => screen.getByTestId('wizard-step-1'));
 
     await fillStep1();
     clickNext();
 
-    // On step 2: select bucketed format (auto-fills Crestmont defaults with 6 buckets)
+    // On step 2: select bucketed format (auto-fills defaults with 6 groups)
     expect(screen.getByTestId('wizard-step-2')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: /bucketed/i }));
+    fireEvent.click(screen.getByTestId('wizard-format-bucketed'));
 
-    // Confirm buckets were pre-filled
+    // Confirm groups were pre-filled
     await waitFor(() => expect(screen.getByTestId('bucket-definitions')).toBeInTheDocument());
 
-    // Remove all 6 buckets — re-query each time to avoid stale references
-    let removeBtns = screen.getAllByRole('button', { name: /remove bucket/i });
+    // Remove all 6 groups — re-query each time to avoid stale references
+    let removeBtns = screen.getAllByRole('button', { name: /remove group/i });
     while (removeBtns.length > 0) {
       fireEvent.click(removeBtns[0]);
-      removeBtns = screen.queryAllByRole('button', { name: /remove bucket/i });
+      removeBtns = screen.queryAllByRole('button', { name: /remove group/i });
     }
 
-    // No bucket rows should remain
+    // No group rows should remain
     expect(screen.queryAllByTestId(/bucket-row-/)).toHaveLength(0);
 
     // Attempt to advance — should be blocked
     clickNext();
 
     expect(screen.getByTestId('wizard-step-2')).toBeInTheDocument();
-    expect(
-      screen.getByText(/bucketed format requires at least one bucket/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/add at least one group/i)).toBeInTheDocument();
   });
 
-  it('advances from step 2 to step 3 with flat format', async () => {
+  // Golf engine has hasStep3:false so flat format goes step 2 → step 4 directly.
+  it('advances from step 2 to step 4 review with flat format', async () => {
     renderWizard();
     await waitFor(() => screen.getByTestId('wizard-step-1'));
 
     await fillStep1();
     clickNext();
 
-    fireEvent.click(screen.getByRole('radio', { name: /flat picks/i }));
+    fireEvent.click(screen.getByTestId('wizard-format-flat'));
     clickNext();
 
-    expect(screen.getByTestId('wizard-step-3')).toBeInTheDocument();
+    expect(screen.getByTestId('wizard-step-4')).toBeInTheDocument();
   });
 
   it('renders step 4 review with correct summary', async () => {
@@ -141,10 +140,7 @@ describe('PoolWizardPage', () => {
     await fillStep1();
     clickNext();
 
-    fireEvent.click(screen.getByRole('radio', { name: /flat picks/i }));
-    clickNext();
-
-    // Step 3: accept defaults, advance
+    fireEvent.click(screen.getByTestId('wizard-format-flat'));
     clickNext();
 
     expect(screen.getByTestId('wizard-step-4')).toBeInTheDocument();
@@ -160,8 +156,7 @@ describe('PoolWizardPage', () => {
 
     await fillStep1();
     clickNext();
-    fireEvent.click(screen.getByRole('radio', { name: /flat picks/i }));
-    clickNext();
+    fireEvent.click(screen.getByTestId('wizard-format-flat'));
     clickNext();
 
     // Publish
@@ -182,8 +177,7 @@ describe('PoolWizardPage', () => {
 
     await fillStep1();
     clickNext();
-    fireEvent.click(screen.getByRole('radio', { name: /flat picks/i }));
-    clickNext();
+    fireEvent.click(screen.getByTestId('wizard-format-flat'));
     clickNext();
 
     fireEvent.click(screen.getByRole('button', { name: /publish pool/i }));
@@ -249,7 +243,7 @@ describe('PoolWizardPage', () => {
 
     // Step 2 should show flat radio pre-selected
     await waitFor(() => expect(screen.getByTestId('wizard-step-2')).toBeInTheDocument());
-    const flatRadio = screen.getByRole('radio', { name: /flat picks/i }) as HTMLInputElement;
+    const flatRadio = screen.getByTestId('wizard-format-flat') as HTMLInputElement;
     expect(flatRadio.checked).toBe(true);
   });
 
@@ -269,8 +263,7 @@ describe('PoolWizardPage', () => {
 
     await fillStep1(); // selects Masters 2026 (id: 101)
     clickNext();
-    fireEvent.click(screen.getByRole('radio', { name: /flat picks/i }));
-    clickNext();
+    fireEvent.click(screen.getByTestId('wizard-format-flat'));
     clickNext();
 
     expect(screen.getByTestId('wizard-step-4')).toBeInTheDocument();

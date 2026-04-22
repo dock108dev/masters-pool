@@ -69,7 +69,7 @@ describe('EntryPage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('pool-locked-banner')).toBeInTheDocument();
       });
-      expect(screen.getByText(/Pool is Locked/i)).toBeInTheDocument();
+      expect(screen.getByText(/Entries are Closed/i)).toBeInTheDocument();
       expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
     });
 
@@ -79,10 +79,34 @@ describe('EntryPage', () => {
       renderEntryPage(openConfig);
 
       await waitFor(() => {
+        const banner = screen.queryByTestId('pool-locked-banner');
+        expect(banner?.textContent).toContain(new Date(MOCK_LOCKED_AT).toLocaleString());
+      });
+    });
+
+    it('banner includes a link to the leaderboard', async () => {
+      activeClient = new MockApiClient(0, [MOCK_RVCC_POOL.id]);
+      const openConfig = { ...rvccConfig, allowSelfServiceEntry: true };
+      renderEntryPage(openConfig);
+
+      await waitFor(() => {
         expect(screen.getByTestId('pool-locked-banner')).toBeInTheDocument();
       });
-      const banner = screen.getByTestId('pool-locked-banner');
-      expect(banner.textContent).toContain(new Date(MOCK_LOCKED_AT).toLocaleString());
+      expect(screen.getByRole('link', { name: /leaderboard/i })).toBeInTheDocument();
+    });
+
+    it('displays pool-locked-banner when pool status is final (closed)', async () => {
+      activeClient = new MockApiClient(
+        0, [], [], null, false, false, [], false, 'Mock Club', [MOCK_RVCC_POOL.id],
+      );
+      const openConfig = { ...rvccConfig, allowSelfServiceEntry: true };
+      renderEntryPage(openConfig);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('pool-locked-banner')).toBeInTheDocument();
+      });
+      expect(screen.getByText(/Entries are Closed/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('entry-form')).not.toBeInTheDocument();
     });
   });
 
